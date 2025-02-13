@@ -1,1 +1,1 @@
-# weni-sdk
+# weni-agents-toolkit
