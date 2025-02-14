@@ -7,10 +7,10 @@ readme = "README.md"
 packages = [
     { include = "weni" }
 ]
+exclude = ["**/tests"]
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
@@ -32,3 +32,11 @@ line-length = 119
 [tool.ruff.format]
 quote-style = "single"
 indent-style = "tab"
+
+[tool.pytest.ini_options]
+addopts = "-v --cov=weni --cov-report term-missing"
+
+[tool.coverage.run]
+branch = true
+source = ["weni"]
+omit = ["*/tests/*"]
