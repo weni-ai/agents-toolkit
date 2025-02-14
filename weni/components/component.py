@@ -47,9 +47,7 @@ class Component:
 
     @classmethod
     def _parse_required_components(cls, result_parts: list[str]) -> None:
-        required_components = (
-            [component.parse() for component in cls._required_components] if cls._required_components else []
-        )
+        required_components = [component.parse() for component in cls._required_components]
 
         if required_components:
             components_str = "[" + "\n".join(required_components) + "]"
@@ -57,9 +55,7 @@ class Component:
 
     @classmethod
     def _parse_allowed_components(cls, result_parts: list[str]) -> None:
-        allowed_components = (
-            [component.parse() for component in cls._allowed_components] if cls._allowed_components else []
-        )
+        allowed_components = [component.parse() for component in cls._allowed_components]
 
         if allowed_components:
             components_str = "[" + "\n".join(allowed_components) + "]"
