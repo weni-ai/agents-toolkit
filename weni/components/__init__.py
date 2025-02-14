@@ -1,16 +1,3 @@
-__all__ = [
-    "Component",
-    "Text",
-    "Header",
-    "Footer",
-    "Attachments",
-    "QuickReplies",
-    "ListMessage",
-    "CTAMessage",
-    "Location",
-    "OrderDetails",
-]
-
 from .component import (
     Component,
     Text,
@@ -23,3 +10,17 @@ from .component import (
     Location,
     OrderDetails,
 )
+
+
+__all__ = [
+    "Component",
+    "Text",
+    "Header",
+    "Footer",
+    "Attachments",
+    "QuickReplies",
+    "ListMessage",
+    "CTAMessage",
+    "Location",
+    "OrderDetails",
+]
