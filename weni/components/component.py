@@ -21,36 +21,59 @@ class Component:
 
     @final
     @classmethod
-    def parse(cls):
+    def parse(cls) -> str:
         """Parse the component and return a string representation of it with its rules alongside its required and allowed components."""
 
+        # mount result, adding only if it's not empty
+        result_parts: list[str] = []
+        cls._parse_description(result_parts)
+        cls._parse_rules(result_parts)
+        cls._parse_required_components(result_parts)
+        cls._parse_allowed_components(result_parts)
+        cls._parse_format(result_parts)
+        cls._parse_example(result_parts)
+
+        return "\n".join(filter(None, result_parts))
+
+    @classmethod
+    def _parse_description(cls, result_parts: list[str]) -> None:
+        if cls._description:
+            result_parts.append(f"[{cls.__name__}] is: {cls._description}")
+
+    @classmethod
+    def _parse_rules(cls, result_parts: list[str]) -> None:
+        if cls._rules:
+            result_parts.append(f"[{cls.__name__}] Component Rules: {cls._rules}")
+
+    @classmethod
+    def _parse_required_components(cls, result_parts: list[str]) -> None:
         required_components = (
             [component.parse() for component in cls._required_components] if cls._required_components else []
         )
-        allowed_components = (
-            [component.parse() for component in cls._allowed_components] if cls._allowed_components else []
-        )
-        rules = cls._rules if cls._rules else []
 
-        # mount result, adding only if it's not empty
-        result_parts = []
-        if cls._description:
-            result_parts.append(f"[{cls.__name__}] is: {cls._description}")
-        if rules:
-            result_parts.append(f"[{cls.__name__}] Component Rules: {rules}")
         if required_components:
             components_str = "[" + "\n".join(required_components) + "]"
             result_parts.append(f"[{cls.__name__}] Required components: {components_str}")
+
+    @classmethod
+    def _parse_allowed_components(cls, result_parts: list[str]) -> None:
+        allowed_components = (
+            [component.parse() for component in cls._allowed_components] if cls._allowed_components else []
+        )
+
         if allowed_components:
             components_str = "[" + "\n".join(allowed_components) + "]"
             result_parts.append(f"[{cls.__name__}] Allowed components: {components_str}")
+
+    @classmethod
+    def _parse_format(cls, result_parts: list[str]) -> None:
         if cls._format:
             result_parts.append(f"[{cls.__name__}] Format: {json.dumps(cls._format, indent=None)}")
+
+    @classmethod
+    def _parse_example(cls, result_parts: list[str]) -> None:
         if cls._example:
             result_parts.append(f"[{cls.__name__}] Example: {json.dumps(cls._example, indent=None)}")
-
-        result = "\n".join(filter(None, result_parts))
-        return result
 
 
 class Text(Component):
