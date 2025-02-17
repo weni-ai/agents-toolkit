@@ -1,25 +1,29 @@
 import json
 import pytest
 
-from weni.skill import Skill, Response
 from weni.context import Context
+from weni.skill import Skill
+from weni.responses import (
+    Response,
+    HeaderType,
+    TextResponse,
+    QuickReplyResponse,
+    ListMessageResponse,
+)
 from weni.components import (
     Text,
     Header,
     Footer,
     QuickReplies,
     ListMessage,
-    CTAMessage,
-    Location,
-    OrderDetails,
 )
 
 
 def test_response_initialization():
     """Test Response class initialization"""
     data = {"key": "value"}
-    components = [Text, Header]
-    response = Response(data=data, components=components)
+    components = [Text]
+    response = TextResponse(data=data)
 
     assert response._data == data
     assert response._components == components
@@ -28,29 +32,26 @@ def test_response_initialization():
 def test_response_str_representation():
     """Test Response string representation"""
     data = {"key": "value"}
-    components = [Text, Header]
-    response = Response(data=data, components=components)
+    response = TextResponse(data=data)
 
-    # Get the parsed components
-    parsed_text = Text.parse()
-    parsed_header = Header.parse()
-
-    expected = json.dumps({"data": {"key": "value"}, "components": [parsed_text, parsed_header]})
+    expected = json.dumps({"data": {"key": "value"}, "components": [Text.parse()]})
 
     assert str(response) == expected
 
 
 def test_response_with_empty_data():
     """Test Response with empty data"""
-    response = Response(data={}, components=[])
-    expected = '{"data": {}, "components": []}'
+    response = TextResponse(data={})
+
+    expected = json.dumps({"data": {}, "components": [Text.parse()]})
+
     assert str(response) == expected
 
 
 def test_response_with_complex_data():
     """Test Response with nested data structure"""
     data = {"nested": {"key": "value", "list": [1, 2, 3], "bool": True}}
-    response = Response(data=data, components=[Text])
+    response = TextResponse(data=data)
 
     assert response._data == data
     assert response._components == [Text]
@@ -61,12 +62,12 @@ def test_skill_execution():
 
     class TestSkill(Skill):
         def execute(self, context: Context) -> Response:
-            return Response(data={"test": "data"}, components=[Text])
+            return TextResponse(data={"test": "data"})
 
     context = Context(credentials={}, parameters={}, globals={})
     result = TestSkill(context)
 
-    assert isinstance(result, Response)
+    assert isinstance(result, TextResponse)
     assert result._data == {"test": "data"}
     assert result._components == [Text]
 
@@ -76,13 +77,13 @@ def test_skill_context_access():
 
     class TestSkill(Skill):
         def execute(self, context: Context) -> Response:
-            return Response(
+            return QuickReplyResponse(
                 data={
                     "credential": context.credentials.get("api_key"),
                     "param": context.parameters.get("user_id"),
                     "global": context.globals.get("env"),
                 },
-                components=[Text],
+                header_type=HeaderType.TEXT,
             )
 
     context = Context(
@@ -91,6 +92,7 @@ def test_skill_context_access():
 
     result = TestSkill(context)
     assert result._data == {"credential": "secret123", "param": "user456", "global": "production"}
+    assert set(result._components) == {Text, QuickReplies, Header}
 
 
 def test_skill_without_execute_implementation():
@@ -102,9 +104,9 @@ def test_skill_without_execute_implementation():
     context = Context(credentials={}, parameters={}, globals={})
     result = EmptySkill(context)
 
-    assert isinstance(result, Response)
+    assert isinstance(result, TextResponse)
     assert result._data == {}
-    assert result._components == []
+    assert result._components == [Text]
 
 
 def test_skill_with_invalid_response():
@@ -119,29 +121,16 @@ def test_skill_with_invalid_response():
         InvalidSkill(context)
 
 
-def test_skill_with_invalid_components():
-    """Test Response with invalid component types"""
-
-    class InvalidComponent:
-        pass
-
-    with pytest.raises(TypeError):
-        Response(data={}, components=[InvalidComponent])  # type: ignore
-
-
 def test_response_immutability():
     """Test Response immutability after creation"""
     data = {"key": "value"}
-    components = [Text]
-    response = Response(data=data, components=components)
+    response = TextResponse(data=data)
 
-    # Modify original data and components
+    # Modify original data
     data["new_key"] = "new_value"
-    components.append(Header)
 
     # Response should maintain original values
     assert "new_key" not in response._data
-    assert Header not in response._components
 
 
 def test_skill_context_immutability():
@@ -151,7 +140,7 @@ def test_skill_context_immutability():
         def execute(self, context: Context) -> Response:
             # Try to modify context
             context.credentials["new_key"] = "value"  # type: ignore
-            return Response(data={}, components=[])
+            return TextResponse(data={})
 
     context = Context(credentials={"key": "value"}, parameters={}, globals={})
     original_credentials = context.credentials.copy()
@@ -162,20 +151,6 @@ def test_skill_context_immutability():
     assert context.credentials == original_credentials
 
 
-def test_response_with_all_component_types():
-    """Test Response with various component types"""
-    # Using only official components from the library
-    components = [Text, Header, Footer, QuickReplies, ListMessage, CTAMessage, Location, OrderDetails]
-    response = Response(data={}, components=components)
-
-    assert response._components == components
-
-    # Verify the string representation includes all components
-    result = str(response)
-    for component in components:
-        assert json.dumps(component.parse()) in result
-
-
 def test_skill_execution_order():
     """Test Skill execution order and single execution"""
     execution_count = 0
@@ -184,30 +159,26 @@ def test_skill_execution_order():
         def execute(self, context: Context) -> Response:
             nonlocal execution_count
             execution_count += 1
-            return Response(data={"count": execution_count}, components=[])
+            return ListMessageResponse(data={"count": execution_count})
 
     context = Context(credentials={}, parameters={}, globals={})
     result = CountedSkill(context)
 
     assert execution_count == 1
     assert result._data == {"count": 1}
+    assert set(result._components) == {Text, ListMessage}
 
 
-def test_response_str_empty_components():
-    """Test Response string representation with empty components"""
-    data = {"key": "value"}
-    response = Response(data=data, components=[])
+def test_skill_with_complex_response():
+    """Test Skill with complex response configuration"""
 
-    expected = json.dumps({"data": {"key": "value"}, "components": []})
+    class ComplexSkill(Skill):
+        def execute(self, context: Context) -> Response:
+            return QuickReplyResponse(data={"message": "Choose an option"}, header_type=HeaderType.TEXT, footer=True)
 
-    assert str(response) == expected
+    context = Context(credentials={}, parameters={}, globals={})
+    result = ComplexSkill(context)
 
-
-def test_response_str_empty_data():
-    """Test Response string representation with empty data"""
-    components = [Text]
-    response = Response(data={}, components=components)
-
-    expected = json.dumps({"data": {}, "components": [Text.parse()]})
-
-    assert str(response) == expected
+    assert isinstance(result, QuickReplyResponse)
+    assert result._data == {"message": "Choose an option"}
+    assert set(result._components) == {Text, QuickReplies, Header, Footer}
