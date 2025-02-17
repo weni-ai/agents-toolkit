@@ -48,4 +48,27 @@ class Skill:
         return result
 
     def execute(self, context: Context) -> Response:
+        """
+        Execute the skill's main functionality.
+
+        This method should be overridden by subclasses to implement the skill's
+        specific behavior. The default implementation returns an empty TextResponse.
+
+        Args:
+            context (Context): Immutable context containing credentials, parameters,
+                            and global variables
+
+        Returns:
+            Response: A Response object containing the execution results and
+                    display components
+
+        Example:
+            ```python
+            def execute(self, context: Context) -> Response:
+                user_name = context.parameters.get("name", "Guest")
+                return TextResponse(data={
+                    "greeting": f"Hello {user_name}!"
+                })
+            ```
+        """
         return TextResponse(data={})

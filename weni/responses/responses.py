@@ -17,7 +17,15 @@ from weni.components import (
 
 class Response:
     """
-    A response from a skill.
+    Base class for all skill response types.
+
+    A Response encapsulates both the data returned by a skill and the components
+    used to display that data. All response data and components are immutable
+    after creation.
+
+    Attributes:
+        _data (dict): The immutable response data
+        _components (list[Type[Component]]): List of component types used to display the data
     """
 
     _data: dict = {}
@@ -40,13 +48,24 @@ class Response:
 
 
 class HeaderType(Enum):
+    """
+    Defines the available header types for responses.
+    """
+
     TEXT = "text"
     ATTACHMENTS = "attachments"
     NONE = "none"
 
 
 class TextResponse(Response):
-    """Type-safe Text response."""
+    """
+    Type-safe Text response.
+
+    Creates a response with a text message.
+
+    Args:
+        data (Dict[str, Any]): The response data
+    """
 
     def __init__(self, data: Dict[str, Any]):
         super().__init__(data=data, components=[Text])
@@ -69,7 +88,14 @@ class AttachmentResponse(Response):
 
 class QuickReplyResponse(Response):
     """
-    Type-safe QuickReply response with different header types.
+    Type-safe response for quick reply messages.
+
+    Creates a response with quick reply buttons and optional header/footer.
+
+    Args:
+        data (Dict[str, Any]): The response data
+        header_type (HeaderType): Type of header to display (default: HeaderType.NONE)
+        footer (bool): Whether to include a footer (default: False)
     """
 
     def __init__(self, data: Dict[str, Any], header_type: HeaderType = HeaderType.NONE, footer: bool = False):
@@ -87,7 +113,16 @@ class QuickReplyResponse(Response):
 
 
 class ListMessageResponse(Response):
-    """Type-safe ListMessage response."""
+    """
+    Type-safe ListMessage response.
+
+    Creates a response with a list of items and optional header/footer.
+
+    Args:
+        data (Dict[str, Any]): The response data
+        header_type (HeaderType): Type of header to display (default: HeaderType.NONE)
+        footer (bool): Whether to include a footer (default: False)
+    """
 
     def __init__(self, data: Dict[str, Any], header_type: HeaderType = HeaderType.NONE, footer: bool = False):
         components = [Text, ListMessage]
@@ -104,7 +139,16 @@ class ListMessageResponse(Response):
 
 
 class CTAMessageResponse(Response):
-    """Type-safe CTA response."""
+    """
+    Type-safe CTA response.
+
+    Creates a response with a call-to-action message and optional header/footer.
+
+    Args:
+        data (Dict[str, Any]): The response data
+        header (bool): Whether to include a header (default: False)
+        footer (bool): Whether to include a footer (default: False)
+    """
 
     def __init__(self, data: Dict[str, Any], header: bool = False, footer: bool = False):
         components = [Text, CTAMessage]
@@ -119,7 +163,14 @@ class CTAMessageResponse(Response):
 
 
 class OrderDetailsResponse(Response):
-    """Type-safe OrderDetails response."""
+    """
+    Type-safe OrderDetails response.
+
+    Creates a response with order details and optional attachments/footer.
+
+    Args:
+        data (Dict[str, Any]): The response data
+    """
 
     def __init__(self, data: Dict[str, Any], attachments: bool = False, footer: bool = False):
         components = [Text, OrderDetails]
@@ -134,7 +185,14 @@ class OrderDetailsResponse(Response):
 
 
 class LocationResponse(Response):
-    """Type-safe Location response."""
+    """
+    Type-safe Location response.
+
+    Creates a response with a location request and optional header/footer.
+
+    Args:
+        data (Dict[str, Any]): The response data
+    """
 
     def __init__(self, data: Dict[str, Any]):
         components = [Text, Location]

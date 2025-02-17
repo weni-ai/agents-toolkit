@@ -3,7 +3,21 @@ from typing import final, Any, ClassVar
 
 
 class Component:
-    """Base class for all components."""
+    """
+    Base class for all components.
+
+    Components define the structure and rules for different types of elements
+    that can be used to display skill responses. All component attributes are
+    immutable class variables.
+
+    Class Attributes:
+        _description (ClassVar[str]): Human-readable description of the component
+        _format (ClassVar[dict]): Expected JSON format for the component
+        _example (ClassVar[dict]): Example usage of the component
+        _rules (ClassVar[list[str]]): List of usage rules and constraints
+        _required_components (ClassVar[list]): Components that must be included
+        _allowed_components (ClassVar[list]): Components that can be optionally included
+    """
 
     _description: ClassVar[str] = ""
     _format: ClassVar[dict[str, Any]] = {}
