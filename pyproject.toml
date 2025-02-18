@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "agents-toolkit"
+name = "weni-agents-toolkit"
 version = "0.1.0"
 description = ""
 authors = ["Paulo Bernardo <paulo.bernardo@weni.ai>"]
@@ -40,3 +40,6 @@ addopts = "-s -vv --cov=weni --cov-report term-missing"
 branch = true
 source = ["weni"]
 omit = ["*/tests/*"]
+
+[tool.mypy]
+files = ["weni"]
