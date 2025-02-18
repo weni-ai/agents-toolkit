@@ -1,39 +1,5 @@
-import json
-from typing import Any, Type
-
-from weni.components import Component
 from weni.context import Context
-from weni.validators import validate_components
-
-
-class Response:
-    """
-    A response from a skill.
-    """
-
-    _data: dict = {}
-    _components: list[Type[Component]] = []
-
-    def __init__(self, data: dict, components: list[Type[Component]]):
-        # Validate components using the existing validator
-        try:
-            validate_components(components)
-        except ValueError as e:
-            raise TypeError(f"Invalid components: {str(e)}")
-
-        # Ensure data and components are immutable
-        self._data = data.copy()
-        self._components = components.copy()
-
-    def __str__(self):
-        # Get parsed components without additional JSON encoding
-        parsed_components = [component.parse() for component in self._components]
-
-        # Create the response structure
-        response = {"data": self._data, "components": parsed_components}
-
-        # Single JSON encoding
-        return json.dumps(response)
+from weni.responses import Response, TextResponse
 
 
 class Skill:
@@ -82,4 +48,4 @@ class Skill:
         return result
 
     def execute(self, context: Context) -> Response:
-        return Response(data={}, components=[])
+        return TextResponse(data={})

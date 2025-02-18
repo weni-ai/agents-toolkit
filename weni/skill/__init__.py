@@ -1,3 +1,3 @@
-from .skill import Skill, Response
+from .skill import Skill
 
-__all__ = ["Skill", "Response"]
+__all__ = ["Skill"]
