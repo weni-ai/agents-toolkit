@@ -9,12 +9,11 @@ _original_components: Dict[str, Dict[str, Any]] = {}
 
 
 def _store_original_values() -> None:
-    """Store original values of all official components.
+    """
+    Store deep copies of original component values when module is loaded.
 
-    This function:
-    1. Gets all non-callable, non-private attributes from the Component class
-    2. Finds all Component subclasses in the component module
-    3. Creates deep copies of their attributes to prevent shared references
+    Creates immutable snapshots of all official component attributes to use
+    for validation. This prevents component modification after module load.
     """
     # Get non-private, non-callable attributes from Component class
     component_attrs = {
@@ -33,7 +32,10 @@ def _store_original_values() -> None:
 
 def validate_components(components: list[Type[Component]]) -> bool:
     """
-    Validates that component attributes haven't been modified from their original values.
+    Validates the integrity of component classes.
+
+    Ensures that component attributes haven't been modified from their original
+    values and that only official components are being used.
 
     Args:
         components: List of Component classes to validate
@@ -42,7 +44,15 @@ def validate_components(components: list[Type[Component]]) -> bool:
         bool: True if all components are valid
 
     Raises:
-        ValueError: If a component's attributes have been modified or if using third-party components
+        ValueError: If components have been modified or aren't official
+
+    Example:
+        ```python
+        try:
+            validate_components([Text, Header, Footer])
+        except ValueError as e:
+            print(f"Validation failed: {e}")
+        ```
     """
     component_attrs = _get_component_attributes()
     official_components = _get_official_components()
@@ -55,7 +65,12 @@ def validate_components(components: list[Type[Component]]) -> bool:
 
 
 def _get_component_attributes() -> set[str]:
-    """Get non-private, non-callable attributes from Component class"""
+    """
+    Get all non-private, non-callable attributes from the Component class.
+
+    Returns:
+        set[str]: Set of attribute names that should be validated
+    """
     return {name for name, value in vars(Component).items() if not name.startswith("__") and not callable(value)}
 
 
@@ -71,7 +86,16 @@ def _get_official_components() -> dict[str, Type[Component]]:
 def _validate_component_is_official(
     component: Type[Component], official_components: dict[str, Type[Component]]
 ) -> None:
-    """Validate that component is an official one"""
+    """
+    Verify that a component is officially defined in the components module.
+
+    Args:
+        component: Component class to validate
+        official_components: Dictionary of official component classes
+
+    Raises:
+        ValueError: If component is not in the official components list
+    """
     if component not in official_components.values():
         raise ValueError(
             f"Component {component.__name__} is not an official component. "
