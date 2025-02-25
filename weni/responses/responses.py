@@ -37,11 +37,13 @@ class Response:
         self._components = components.copy()
 
     def __str__(self):
-        # Get parsed components without additional JSON encoding
-        parsed_components = [component.parse() for component in self._components]
+        final_format = {"msg": {}}
+
+        for component in self._components:
+            final_format["msg"] = {**final_format["msg"], **component.get_format_example()}
 
         # Create the response structure
-        response = {"data": self._data, "components": parsed_components}
+        response = {"data": self._data, "format": f"<example>{final_format}</example>"}
 
         # Single JSON encoding
         return json.dumps(response)
