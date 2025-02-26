@@ -34,7 +34,12 @@ def test_response_str_representation():
     data = {"key": "value"}
     response = TextResponse(data=data)
 
-    expected = json.dumps({"data": {"key": "value"}, "components": [Text.parse()]})
+    expected = json.dumps(
+        {
+            "data": {"key": "value"},
+            "format": f"<example>{{'msg': {str(Text.get_format_example())}}}</example>",
+        }
+    )
 
     assert str(response) == expected
 
@@ -43,7 +48,7 @@ def test_response_with_empty_data():
     """Test Response with empty data"""
     response = TextResponse(data={})
 
-    expected = json.dumps({"data": {}, "components": [Text.parse()]})
+    expected = json.dumps({"data": {}, "format": f"<example>{{'msg': {str(Text.get_format_example())}}}</example>"})
 
     assert str(response) == expected
 
