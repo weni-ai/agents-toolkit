@@ -41,7 +41,7 @@ jobs:
         
     - name: Run type checking
       run: |
-        poetry run mypy
+        poetry run mypy --explicit-package-bases . 
         
     - name: Run linting
       run: |
