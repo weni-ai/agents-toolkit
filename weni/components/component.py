@@ -38,7 +38,7 @@ class Header(Component):
 
 
 class Footer(Component):
-    _format_example = {"footer": {"type": "text", "text": "Powered by Weni"}}
+    _format_example = {"footer": "Powered by Weni"}
 
 
 class Attachments(Component):
@@ -53,7 +53,7 @@ class ListMessage(Component):
     _format_example = {
         "interactive_type": "list",
         "list_message": {
-            "button_text": "<button_text>",
+            "button_text": "Select an option",
             "list_items": [
                 {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
             ],
@@ -64,7 +64,7 @@ class ListMessage(Component):
 class CTAMessage(Component):
     _format_example = {
         "interactive_type": "cta_url",
-        "cta_message": {"url": "<url>", "display_text": "<display_text>"},
+        "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
     }
 
 
