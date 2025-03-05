@@ -13,6 +13,7 @@ from weni.components import (
     Location,
     OrderDetails,
 )
+from weni.validators.validators import validate_components
 
 
 # All Reponse() calls should return a ResponseObject
@@ -45,6 +46,8 @@ class Response:
         instance = super().__new__(cls)
         instance._data = deepcopy(data)
         instance._components = deepcopy(components)
+
+        validate_components(instance._components)
 
         final_format: dict[str, Any] = {"msg": {}}
 

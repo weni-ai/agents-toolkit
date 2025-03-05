@@ -1,4 +1,6 @@
+import pytest
 from weni.responses import (
+    Response,
     TextResponse,
     AttachmentResponse,
     QuickReplyResponse,
@@ -8,6 +10,7 @@ from weni.responses import (
     LocationResponse,
     HeaderType,
 )
+from weni.components import Component
 
 
 def test_text_response():
@@ -491,3 +494,26 @@ def test_response_data_handling():
 
     result, _ = LocationResponse(data=test_data)
     assert result == {"key": "value", "nested": {"test": True}}
+
+
+def test_invalid_components_exception():
+    """Test that Response raises ValueError when invalid components are provided"""
+
+    # Create a custom component not defined in the official components module
+    class CustomComponent(Component):
+        _format_example = {"custom": "This is a custom component"}
+
+    # Test with an unofficial component
+    with pytest.raises(ValueError, match="is not an official component"):
+        Response(data={}, components=[CustomComponent])
+
+    # Test with a component that's not in the components module
+    # but has the same name as an official component
+    from weni.components import Text
+
+    # Create a copy of Text with the same name but in a different module
+    class Text(Component):  # type: ignore  # noqa: F811
+        _format_example = {"text": "I'm a fake Text component"}
+
+    with pytest.raises(ValueError, match="is not an official component"):
+        Response(data={}, components=[Text])
