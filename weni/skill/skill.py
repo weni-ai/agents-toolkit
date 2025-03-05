@@ -1,5 +1,5 @@
 from weni.context import Context
-from weni.responses import Response, TextResponse
+from weni.responses import ResponseObject, TextResponse
 
 
 class Skill:
@@ -40,14 +40,17 @@ class Skill:
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        result = instance.execute(context)
+        result, format = instance.execute(context)
 
-        if not isinstance(result, Response):
+        if not isinstance(result, dict):
             raise TypeError(f"Execute method must return a Response object, got {type(result)}")
 
-        return result
+        if not isinstance(format, dict):
+            raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-    def execute(self, context: Context) -> Response:
+        return result, format
+
+    def execute(self, context: Context) -> ResponseObject:
         """
         Execute the skill's main functionality.
 
@@ -71,4 +74,4 @@ class Skill:
                 })
             ```
         """
-        return TextResponse(data={})
+        return TextResponse(data={})  # type: ignore
