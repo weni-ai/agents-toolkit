@@ -56,7 +56,7 @@ class OrderSkill(Skill):
 Use type hints for better code safety:
 
 ```python
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
 class ProfileSkill(Skill):
     def execute(self, context: Context) -> TextResponse:
