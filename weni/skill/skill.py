@@ -43,7 +43,7 @@ class Skill:
         result, format = instance.execute(context)
 
         if not isinstance(result, dict):
-            raise TypeError(f"Execute method must return a Response object, got {type(result)}")
+            raise TypeError(f"Execute method must return a dictionary, got {type(result)}")
 
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")

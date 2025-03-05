@@ -113,7 +113,7 @@ def test_skill_with_invalid_response():
     with pytest.raises(TypeError) as excinfo:
         InvalidSkill(context)
 
-    assert "Execute method must return a Response object" in str(excinfo.value)
+    assert "Execute method must return a dictionary" in str(excinfo.value)
 
 
 def test_skill_with_invalid_format():
