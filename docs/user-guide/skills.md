@@ -39,7 +39,7 @@ class WeatherSkill(Skill):
         location: str = context.parameters.get("location", "")
         return TextResponse(data=self._get_weather(location))
 
-    def _get_weather(self, location: str) -> Dict[str, Any]:
+    def _get_weather(self, location: str) -> dict[str, Any]:
         # Implementation
         pass
 ```

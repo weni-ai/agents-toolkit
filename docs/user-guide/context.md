@@ -61,6 +61,6 @@ from typing import Optional, Dict, Any
 class ProfileSkill(Skill):
     def execute(self, context: Context) -> TextResponse:
         user_id: str = context.parameters.get("user_id", "")
-        settings: Dict[str, Any] = context.globals.get("settings", {})
+        settings: dict[str, Any] = context.globals.get("settings", {})
         api_key: Optional[str] = context.credentials.get("api_key")
 ```
