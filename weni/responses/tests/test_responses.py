@@ -1,4 +1,6 @@
+import pytest
 from weni.responses import (
+    Response,
     TextResponse,
     AttachmentResponse,
     QuickReplyResponse,
@@ -8,183 +10,510 @@ from weni.responses import (
     LocationResponse,
     HeaderType,
 )
-from weni.components import (
-    Text,
-    Header,
-    Footer,
-    Attachments,
-    QuickReplies,
-    ListMessage,
-    CTAMessage,
-    Location,
-    OrderDetails,
-)
+from weni.components import Component
 
 
 def test_text_response():
     """Test TextResponse with different configurations"""
     # Basic text response
-    response = TextResponse(data={})
-    assert response._components == [Text]
+    result, format = TextResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
 
 
 def test_attachment_response():
     """Test AttachmentResponse with different configurations"""
     # Basic attachment response
-    response = AttachmentResponse(data={})
-    assert set(response._components) == {Attachments}
+    result, format = AttachmentResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"attachments": ["image/png:https://example.com/image.png"]}}
 
     # Attachment with footer
-    response = AttachmentResponse(data={}, text=True, footer=True)
-    assert set(response._components) == {Text, Attachments, Footer}
+    result, format = AttachmentResponse(data={}, text=True, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "attachments": ["image/png:https://example.com/image.png"],
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_quick_reply_response():
     """Test QuickReplyResponse with different configurations"""
     # Basic quick reply
-    response = QuickReplyResponse(data={})
-    assert set(response._components) == {Text, QuickReplies}
+    result, format = QuickReplyResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
 
     # Quick reply with header
-    response = QuickReplyResponse(data={}, header_type=HeaderType.TEXT, footer=True)
-    assert set(response._components) == {Text, QuickReplies, Header, Footer}
+    result, format = QuickReplyResponse(data={}, header_type=HeaderType.TEXT, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "quick_replies": ["Yes", "No"],
+            "header": {"type": "text", "text": "Important Message"},
+            "footer": "Powered by Weni",
+        }
+    }
 
     # Quick reply with attachments
-    response = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS, footer=True)
-    assert set(response._components) == {Text, QuickReplies, Attachments, Footer}
+    result, format = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "quick_replies": ["Yes", "No"],
+            "attachments": ["image/png:https://example.com/image.png"],
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_list_message_response():
     """Test ListMessageResponse with different configurations"""
     # Basic list message
-    response = ListMessageResponse(data={})
-    assert set(response._components) == {Text, ListMessage}
+    result, format = ListMessageResponse(data={})
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+        }
+    }
 
     # List message with header
-    response = ListMessageResponse(data={}, header_type=HeaderType.TEXT, footer=True)
-    assert set(response._components) == {Text, ListMessage, Header, Footer}
+    result, format = ListMessageResponse(data={}, header_type=HeaderType.TEXT, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+            "header": {"type": "text", "text": "Important Message"},
+            "footer": "Powered by Weni",
+        }
+    }
+
+    # List message with attachments
+    result, format = ListMessageResponse(data={}, header_type=HeaderType.ATTACHMENTS, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+            "attachments": ["image/png:https://example.com/image.png"],
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_cta_message_response():
     """Test CTAMessageResponse with different configurations"""
     # Basic CTA message
-    response = CTAMessageResponse(data={})
-    assert set(response._components) == {Text, CTAMessage}
+    result, format = CTAMessageResponse(data={})
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "cta_url",
+            "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
+        }
+    }
 
     # CTA message with header
-    response = CTAMessageResponse(data={}, header=True, footer=True)
-    assert set(response._components) == {Text, CTAMessage, Header, Footer}
-
-
-def test_data_immutability():
-    """Test that response data remains immutable"""
-    data = {"key": "value"}
-    response = TextResponse(data=data)
-
-    # Original data should not be modified
-    assert response._data == {"key": "value"}
-    assert data == {"key": "value"}
-
-
-def test_components_immutability():
-    """Test that response components remain immutable"""
-    response = QuickReplyResponse(data={}, header_type=HeaderType.TEXT)
-    original_components = response._components.copy()
-
-    # Try to modify components (this should create a new list)
-    modified = response._components + [Footer]
-
-    # Original components should remain unchanged
-    assert response._components == original_components
-    assert modified != response._components
+    result, format = CTAMessageResponse(data={}, header=True, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "cta_url",
+            "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
+            "header": {"type": "text", "text": "Important Message"},
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_order_details_response():
     """Test OrderDetailsResponse with different configurations"""
+    base_format = {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "order_details",
+            "order_details": {
+                "reference_id": "<reference_id>",
+                "payment_settings": {
+                    "type": "<order_type>",
+                    "payment_link": "<payment_link>",
+                    "pix_config": {
+                        "key": "<pix_key>",
+                        "key_type": "<pix_key_type>",
+                        "merchant_name": "<merchant_name>",
+                        "code": "<pix_code>",
+                    },
+                },
+                "total_amount": "<total_amount>",
+                "order": {
+                    "items": [
+                        {
+                            "retailer_id": "<product_retailer_id>",
+                            "name": "<product_name>",
+                            "amount": {
+                                "value": "<product_value>",
+                                "offset": 100,
+                            },
+                            "quantity": 1,
+                            "sale_amount": {"value": "<product_sale_amount>", "offset": 100},
+                        }
+                    ],
+                    "subtotal": "<subtotal>",
+                    "tax": {"description": "<tax_description>", "value": "<tax_value>", "offset": 100},
+                    "shipping": {"description": "<shipping_description>", "value": "<shipping_value>", "offset": 100},
+                    "discount": {"description": "<discount_description>", "value": "<discount_value>", "offset": 100},
+                },
+            },
+        }
+    }
+
     # Basic order details
-    response = OrderDetailsResponse(data={})
-    assert set(response._components) == {Text, OrderDetails}
+    result, format = OrderDetailsResponse(data={})
+    assert result == {}
+    assert format == base_format
 
     # Order details with attachments
-    response = OrderDetailsResponse(data={}, attachments=True, footer=True)
-    assert set(response._components) == {Text, OrderDetails, Attachments, Footer}
+    result, format = OrderDetailsResponse(data={}, attachments=True, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            **base_format["msg"],
+            "attachments": ["image/png:https://example.com/image.png"],
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_location_response():
     """Test LocationResponse"""
     # Basic location response
-    response = LocationResponse(data={})
-    assert set(response._components) == {Text, Location}
+    result, format = LocationResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?", "interactive_type": "location"}}
 
 
 def test_response_type_combinations():
     """Test all valid HeaderType combinations for each response"""
     # QuickReply supports all types
-    response = QuickReplyResponse(data={}, header_type=HeaderType.NONE)
-    assert set(response._components) == {Text, QuickReplies}
+    result, format = QuickReplyResponse(data={}, header_type=HeaderType.NONE)
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
 
-    response = QuickReplyResponse(data={}, header_type=HeaderType.TEXT)
-    assert set(response._components) == {Text, QuickReplies, Header}
+    result, format = QuickReplyResponse(data={}, header_type=HeaderType.TEXT)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "quick_replies": ["Yes", "No"],
+            "header": {"type": "text", "text": "Important Message"},
+        }
+    }
 
-    response = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS)
-    assert set(response._components) == {Text, QuickReplies, Attachments}
+    result, format = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "quick_replies": ["Yes", "No"],
+            "attachments": ["image/png:https://example.com/image.png"],
+        }
+    }
 
     # ListMessage supports all types
-    response = ListMessageResponse(data={}, header_type=HeaderType.NONE)
-    assert set(response._components) == {Text, ListMessage}
+    result, format = ListMessageResponse(data={}, header_type=HeaderType.NONE)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+        }
+    }
 
-    response = ListMessageResponse(data={}, header_type=HeaderType.TEXT)
-    assert set(response._components) == {Text, ListMessage, Header}
+    result, format = ListMessageResponse(data={}, header_type=HeaderType.TEXT)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "header": {"type": "text", "text": "Important Message"},
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+        }
+    }
 
-    response = ListMessageResponse(data={}, header_type=HeaderType.ATTACHMENTS)
-    assert set(response._components) == {Text, ListMessage, Attachments}
+    result, format = ListMessageResponse(data={}, header_type=HeaderType.ATTACHMENTS)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "attachments": ["image/png:https://example.com/image.png"],
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+        }
+    }
 
 
 def test_footer_combinations():
     """Test footer combinations with different responses"""
-    responses = [
-        AttachmentResponse(data={}, footer=True),
-        QuickReplyResponse(data={}, footer=True),
-        ListMessageResponse(data={}, footer=True),
-        CTAMessageResponse(data={}, footer=True),
-        OrderDetailsResponse(data={}, footer=True),
-    ]
+    result, format = AttachmentResponse(data={}, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "attachments": ["image/png:https://example.com/image.png"],
+            "footer": "Powered by Weni",
+        }
+    }
 
-    for response in responses:
-        assert Footer in response._components
+    result, format = QuickReplyResponse(data={}, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "quick_replies": ["Yes", "No"],
+            "footer": "Powered by Weni",
+        }
+    }
+
+    result, format = ListMessageResponse(data={}, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+            "footer": "Powered by Weni",
+        }
+    }
+
+    result, format = CTAMessageResponse(data={}, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "cta_url",
+            "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
+            "footer": "Powered by Weni",
+        }
+    }
+
+    result, format = OrderDetailsResponse(data={}, footer=True)
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "order_details",
+            "order_details": {
+                "reference_id": "<reference_id>",
+                "payment_settings": {
+                    "type": "<order_type>",
+                    "payment_link": "<payment_link>",
+                    "pix_config": {
+                        "key": "<pix_key>",
+                        "key_type": "<pix_key_type>",
+                        "merchant_name": "<merchant_name>",
+                        "code": "<pix_code>",
+                    },
+                },
+                "total_amount": "<total_amount>",
+                "order": {
+                    "items": [
+                        {
+                            "retailer_id": "<product_retailer_id>",
+                            "name": "<product_name>",
+                            "amount": {
+                                "value": "<product_value>",
+                                "offset": 100,
+                            },
+                            "quantity": 1,
+                            "sale_amount": {"value": "<product_sale_amount>", "offset": 100},
+                        }
+                    ],
+                    "subtotal": "<subtotal>",
+                    "tax": {"description": "<tax_description>", "value": "<tax_value>", "offset": 100},
+                    "shipping": {"description": "<shipping_description>", "value": "<shipping_value>", "offset": 100},
+                    "discount": {"description": "<discount_description>", "value": "<discount_value>", "offset": 100},
+                },
+            },
+            "footer": "Powered by Weni",
+        }
+    }
 
 
 def test_required_components():
     """Test that required components are always present"""
     # Text is required for most responses, except for AttachmentResponse
-    responses = [
-        TextResponse(data={}),
-        QuickReplyResponse(data={}),
-        ListMessageResponse(data={}),
-        CTAMessageResponse(data={}),
-        OrderDetailsResponse(data={}),
-        LocationResponse(data={}),
-    ]
 
-    for response in responses:
-        assert Text in response._components
+    result, format = TextResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+    result, format = QuickReplyResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
+
+    result, format = ListMessageResponse(data={})
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "list",
+            "list_message": {
+                "button_text": "Select an option",
+                "list_items": [
+                    {"title": "First option title", "description": "First option description", "uuid": "<random_uuid>"}
+                ],
+            },
+        }
+    }
+
+    result, format = CTAMessageResponse(data={})
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "cta_url",
+            "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
+        }
+    }
+
+    result, format = OrderDetailsResponse(data={})
+    assert result == {}
+    assert format == {
+        "msg": {
+            "text": "Hello, how can I help you today?",
+            "interactive_type": "order_details",
+            "order_details": {
+                "reference_id": "<reference_id>",
+                "payment_settings": {
+                    "type": "<order_type>",
+                    "payment_link": "<payment_link>",
+                    "pix_config": {
+                        "key": "<pix_key>",
+                        "key_type": "<pix_key_type>",
+                        "merchant_name": "<merchant_name>",
+                        "code": "<pix_code>",
+                    },
+                },
+                "total_amount": "<total_amount>",
+                "order": {
+                    "items": [
+                        {
+                            "retailer_id": "<product_retailer_id>",
+                            "name": "<product_name>",
+                            "amount": {
+                                "value": "<product_value>",
+                                "offset": 100,
+                            },
+                            "quantity": 1,
+                            "sale_amount": {"value": "<product_sale_amount>", "offset": 100},
+                        }
+                    ],
+                    "subtotal": "<subtotal>",
+                    "tax": {"description": "<tax_description>", "value": "<tax_value>", "offset": 100},
+                    "shipping": {"description": "<shipping_description>", "value": "<shipping_value>", "offset": 100},
+                    "discount": {"description": "<discount_description>", "value": "<discount_value>", "offset": 100},
+                },
+            },
+        }
+    }
+
+    result, format = LocationResponse(data={})
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?", "interactive_type": "location"}}
 
 
 def test_response_data_handling():
     """Test that response data is handled correctly"""
     test_data = {"key": "value", "nested": {"test": True}}
 
-    responses = [
-        TextResponse(data=test_data),
-        AttachmentResponse(data=test_data),
-        QuickReplyResponse(data=test_data),
-        ListMessageResponse(data=test_data),
-        CTAMessageResponse(data=test_data),
-        OrderDetailsResponse(data=test_data),
-        LocationResponse(data=test_data),
-    ]
+    result, _ = TextResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
 
-    for response in responses:
-        assert response._data == test_data
-        # Ensure data is a copy
-        assert response._data is not test_data
+    result, _ = AttachmentResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+    result, _ = QuickReplyResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+    result, _ = ListMessageResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+    result, _ = CTAMessageResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+    result, _ = OrderDetailsResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+    result, _ = LocationResponse(data=test_data)
+    assert result == {"key": "value", "nested": {"test": True}}
+
+
+def test_invalid_components_exception():
+    """Test that Response raises ValueError when invalid components are provided"""
+
+    # Create a custom component not defined in the official components module
+    class CustomComponent(Component):
+        _format_example = {"custom": "This is a custom component"}
+
+    # Test with an unofficial component
+    with pytest.raises(ValueError, match="is not an official component"):
+        Response(data={}, components=[CustomComponent])
+
+    # Test with a component that's not in the components module
+    # but has the same name as an official component
+    from weni.components import Text
+
+    # Create a copy of Text with the same name but in a different module
+    class Text(Component):  # type: ignore  # noqa: F811
+        _format_example = {"text": "I'm a fake Text component"}
+
+    with pytest.raises(ValueError, match="is not an official component"):
+        Response(data={}, components=[Text])

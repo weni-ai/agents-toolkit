@@ -1,11 +1,11 @@
 import inspect
-from typing import Type, Dict, Any
+from typing import Type, Any
 from copy import deepcopy
 from weni.components import Component
 
 
 # Store original component values when module is loaded
-_original_components: Dict[str, Dict[str, Any]] = {}
+_original_components: dict[str, dict[str, Any]] = {}
 
 
 def _store_original_values() -> None:

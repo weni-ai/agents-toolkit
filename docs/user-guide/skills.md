@@ -32,14 +32,14 @@ class CustomSkill(Skill):
 Always use type hints:
 
 ```python
-from typing import Dict, Any
+from typing import Any
 
 class WeatherSkill(Skill):
     def execute(self, context: Context) -> Response:
         location: str = context.parameters.get("location", "")
         return TextResponse(data=self._get_weather(location))
 
-    def _get_weather(self, location: str) -> Dict[str, Any]:
+    def _get_weather(self, location: str) -> dict[str, Any]:
         # Implementation
         pass
 ```

@@ -1,4 +1,5 @@
 from .responses import (
+    ResponseObject,
     Response,
     HeaderType,
     TextResponse,
@@ -11,6 +12,7 @@ from .responses import (
 )
 
 __all__ = [
+    "ResponseObject",
     "Response",
     "HeaderType",
     "TextResponse",

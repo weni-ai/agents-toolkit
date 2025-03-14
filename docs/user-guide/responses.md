@@ -210,10 +210,10 @@ response = TextResponse(
 Use type hints to improve code quality and IDE support:
 
 ```python
-from typing import Dict, Any
+from typing import Any
 from weni.responses import TextResponse
 
-def create_response(context_data: Dict[str, Any]) -> TextResponse:
+def create_response(context_data: dict[str, Any]) -> TextResponse:
     return TextResponse(data=context_data)
 ```
 

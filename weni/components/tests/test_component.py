@@ -75,8 +75,7 @@ def test_footer_component_format_example():
     """Test getting format example from Footer component"""
     result = Footer.get_format_example()
     assert "footer" in result
-    assert "type" in result["footer"]
-    assert "text" in result["footer"]
+    assert isinstance(result["footer"], str)
 
 
 def test_attachments_component_format_example():
