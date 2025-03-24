@@ -19,7 +19,7 @@ from weni.validators.validators import validate_components
 # All Reponse() calls should return a ResponseObject
 # We've added type: ignore in all return statements since __new__ return type is ignored by mypy for now
 # see https://github.com/python/mypy/issues/15182
-ResponseObject = tuple[dict[str, Any], dict[str, Any]]
+ResponseObject = tuple[Any, dict[str, Any]]
 
 
 class Response:
@@ -31,18 +31,18 @@ class Response:
     after creation.
 
     Attributes:
-        _data (dict[str, Any]): The immutable response data
+        _data (Any): The immutable response data
         _components (list[Type[Component]]): List of component types used to display the data
 
     Args:
-        data (dict[str, Any]): The response data to be returned
+        data (Any): The response data to be returned
         components (list[Type[Component]]): List of component types used for rendering
     """
 
-    _data: dict[str, Any] = {}
+    _data: Any = {}
     _components: list[Type[Component]] = []
 
-    def __new__(cls, data: dict[str, Any], components: list[Type[Component]]) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, components: list[Type[Component]]) -> ResponseObject:  # type: ignore
         instance = super().__new__(cls)
         instance._data = deepcopy(data)
         instance._components = deepcopy(components)
@@ -79,7 +79,7 @@ class TextResponse(Response):
     Creates a response with a text message.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
 
     Example:
         ```python
@@ -87,7 +87,7 @@ class TextResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any]) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any) -> ResponseObject:  # type: ignore
         return super().__new__(cls, data=data, components=[Text])
 
 
@@ -98,7 +98,7 @@ class AttachmentResponse(Response):
     Creates a response with attachments such as images, documents, or videos.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
         text (bool): Whether to include a text component (default: False)
         footer (bool): Whether to include a footer component (default: False)
 
@@ -108,7 +108,7 @@ class AttachmentResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any], text: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, text: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
         components: list[Type[Component]] = [Attachments]
 
         if text:
@@ -127,7 +127,7 @@ class QuickReplyResponse(Response):
     Creates a response with quick reply buttons and optional header/footer.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
         header_type (HeaderType): Type of header to display (default: HeaderType.NONE)
         footer (bool): Whether to include a footer (default: False)
 
@@ -137,7 +137,7 @@ class QuickReplyResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any], header_type: HeaderType = HeaderType.NONE, footer: bool = False) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, header_type: HeaderType = HeaderType.NONE, footer: bool = False) -> ResponseObject:  # type: ignore
         components = [Text, QuickReplies]
 
         if header_type == HeaderType.TEXT:
@@ -158,7 +158,7 @@ class ListMessageResponse(Response):
     Creates a response with a list of items and optional header/footer.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
         header_type (HeaderType): Type of header to display (default: HeaderType.NONE)
         footer (bool): Whether to include a footer (default: False)
 
@@ -168,7 +168,7 @@ class ListMessageResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any], header_type: HeaderType = HeaderType.NONE, footer: bool = False) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, header_type: HeaderType = HeaderType.NONE, footer: bool = False) -> ResponseObject:  # type: ignore
         components = [Text, ListMessage]
 
         if header_type == HeaderType.TEXT:
@@ -189,7 +189,7 @@ class CTAMessageResponse(Response):
     Creates a response with a call-to-action message and optional header/footer.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
         header (bool): Whether to include a header component (default: False)
         footer (bool): Whether to include a footer component (default: False)
 
@@ -199,7 +199,7 @@ class CTAMessageResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any], header: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, header: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
         components = [Text, CTAMessage]
 
         if header:
@@ -218,7 +218,7 @@ class OrderDetailsResponse(Response):
     Creates a response with order details and optional attachments/footer.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
         attachments (bool): Whether to include attachments (default: False)
         footer (bool): Whether to include a footer (default: False)
 
@@ -228,7 +228,7 @@ class OrderDetailsResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any], attachments: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any, attachments: bool = False, footer: bool = False) -> ResponseObject:  # type: ignore
         components = [Text, OrderDetails]
 
         if attachments:
@@ -247,7 +247,7 @@ class LocationResponse(Response):
     Creates a response with a location request and optional header/footer.
 
     Args:
-        data (dict[str, Any]): The response data
+        data (Any): The response data
 
     Example:
         ```python
@@ -255,5 +255,5 @@ class LocationResponse(Response):
         ```
     """
 
-    def __new__(cls, data: dict[str, Any]) -> ResponseObject:  # type: ignore
+    def __new__(cls, data: Any) -> ResponseObject:  # type: ignore
         return super().__new__(cls, data=data, components=[Text, Location])
