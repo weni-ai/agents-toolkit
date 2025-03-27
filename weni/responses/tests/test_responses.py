@@ -496,6 +496,34 @@ def test_response_data_handling():
     assert result == {"key": "value", "nested": {"test": True}}
 
 
+def test_non_dict_response_data():
+    """Test that non-dictionary response data is handled correctly"""
+    # Test with a list
+    list_data = ["item1", "item2", "item3"]
+    result, _ = TextResponse(data=list_data)
+    assert result == ["item1", "item2", "item3"]
+
+    # Test with a string
+    string_data = "plain text data"
+    result, _ = TextResponse(data=string_data)
+    assert result == "plain text data"
+
+    # Test with a number
+    number_data = 42
+    result, _ = TextResponse(data=number_data)
+    assert result == 42
+
+    # Test with None
+    none_data = None
+    result, _ = TextResponse(data=none_data)
+    assert result is None
+
+    # Test with a boolean
+    bool_data = True
+    result, _ = TextResponse(data=bool_data)
+    assert result is True
+
+
 def test_invalid_components_exception():
     """Test that Response raises ValueError when invalid components are provided"""
 

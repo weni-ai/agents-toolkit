@@ -42,9 +42,6 @@ class Skill:
         instance = super().__new__(cls)
         result, format = instance.execute(context)
 
-        if not isinstance(result, dict):
-            raise TypeError(f"Execute method must return a dictionary, got {type(result)}")
-
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
