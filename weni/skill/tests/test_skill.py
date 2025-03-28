@@ -112,26 +112,13 @@ def test_skill_without_execute_implementation():
     assert format == {"msg": {"text": "Hello, how can I help you today?"}}
 
 
-def test_skill_with_invalid_response():
-    """Test Skill with response that is not a dict"""
-
-    class InvalidSkill(Skill):
-        def execute(self, context: Context) -> ResponseObject:  # type: ignore
-            return "not a dictionary", {}  # type: ignore
-
-    context = Context(credentials={}, parameters={}, globals={}, contact={})
-
-    with pytest.raises(TypeError) as excinfo:
-        InvalidSkill(context)
-
-    assert "Execute method must return a dictionary" in str(excinfo.value)
-
-
 def test_skill_with_invalid_format():
-    """Test Skill with format that is not a dict"""
+    """Test Skill where the format value (second return value) is not a dict"""
 
     class InvalidFormatSkill(Skill):
         def execute(self, context: Context) -> ResponseObject:  # type: ignore
+            # The first value can be any type (a dictionary here),
+            # but the second value (format) must be a dictionary - not a string
             return {}, "not a dictionary"  # type: ignore
 
     context = Context(credentials={}, parameters={}, globals={}, contact={})
@@ -218,3 +205,35 @@ def test_skill_with_complex_response():
             "footer": "Powered by Weni",
         }
     }
+
+
+def test_skill_with_non_dict_response():
+    """Test Skill execution with non-dictionary response data"""
+
+    class ListDataSkill(Skill):
+        def execute(self, context: Context) -> ResponseObject:
+            return TextResponse(data=["item1", "item2", "item3"])  # type: ignore
+
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
+    result, format = ListDataSkill(context)
+
+    assert result == ["item1", "item2", "item3"]
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+    class StringDataSkill(Skill):
+        def execute(self, context: Context) -> ResponseObject:
+            return TextResponse(data="simple string response")  # type: ignore
+
+    result, format = StringDataSkill(context)
+
+    assert result == "simple string response"
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+    class NumberDataSkill(Skill):
+        def execute(self, context: Context) -> ResponseObject:
+            return TextResponse(data=42)  # type: ignore
+
+    result, format = NumberDataSkill(context)
+
+    assert result == 42
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
