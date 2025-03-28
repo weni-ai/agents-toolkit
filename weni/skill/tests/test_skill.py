@@ -52,7 +52,7 @@ def test_skill_execution():
         def execute(self, context: Context) -> ResponseObject:
             return TextResponse(data={"test": "data"})  # type: ignore
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
     result, format = TestSkill(context)
 
     assert result == {"test": "data"}
@@ -69,16 +69,27 @@ def test_skill_context_access():
                     "credential": context.credentials.get("api_key"),
                     "param": context.parameters.get("user_id"),
                     "global": context.globals.get("env"),
+                    "contact": context.contact.get("name"),
+                    "urn": context.contact.get("urn"),
                 },
                 header_type=HeaderType.TEXT,
             )  # type: ignore
 
     context = Context(
-        credentials={"api_key": "secret123"}, parameters={"user_id": "user456"}, globals={"env": "production"}
+        credentials={"api_key": "secret123"},
+        parameters={"user_id": "user456"},
+        globals={"env": "production"},
+        contact={"name": "John Doe", "urn": "tel:+1234567890"},
     )
 
     result, format = TestSkill(context)
-    assert result == {"credential": "secret123", "param": "user456", "global": "production"}
+    assert result == {
+        "credential": "secret123",
+        "param": "user456",
+        "global": "production",
+        "contact": "John Doe",
+        "urn": "tel:+1234567890",
+    }
     assert format == {
         "msg": {
             "text": "Hello, how can I help you today?",
@@ -94,7 +105,7 @@ def test_skill_without_execute_implementation():
     class EmptySkill(Skill):
         pass
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
     result, format = EmptySkill(context)
 
     assert result == {}
@@ -110,7 +121,7 @@ def test_skill_with_invalid_format():
             # but the second value (format) must be a dictionary - not a string
             return {}, "not a dictionary"  # type: ignore
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
 
     with pytest.raises(TypeError) as excinfo:
         InvalidFormatSkill(context)
@@ -140,7 +151,7 @@ def test_skill_context_immutability():
             context.credentials["new_key"] = "value"  # type: ignore
             return TextResponse(data={})  # type: ignore
 
-    context = Context(credentials={"key": "value"}, parameters={}, globals={})
+    context = Context(credentials={"key": "value"}, parameters={}, globals={}, contact={})
     original_credentials = context.credentials.copy()
 
     with pytest.raises(TypeError):
@@ -159,7 +170,7 @@ def test_skill_execution_order():
             execution_count += 1
             return TextResponse(data={"count": execution_count})  # type: ignore
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
     result, format = CountedSkill(context)
 
     assert execution_count == 1
@@ -182,7 +193,7 @@ def test_skill_with_complex_response():
                 data={"message": "Choose an option"}, header_type=HeaderType.TEXT, footer=True
             )  # type: ignore
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
     result, format = ComplexSkill(context)
 
     assert result == {"message": "Choose an option"}
@@ -203,7 +214,7 @@ def test_skill_with_non_dict_response():
         def execute(self, context: Context) -> ResponseObject:
             return TextResponse(data=["item1", "item2", "item3"])  # type: ignore
 
-    context = Context(credentials={}, parameters={}, globals={})
+    context = Context(credentials={}, parameters={}, globals={}, contact={})
     result, format = ListDataSkill(context)
 
     assert result == ["item1", "item2", "item3"]
