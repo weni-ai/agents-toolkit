@@ -4,14 +4,14 @@ from typing import Mapping
 
 class Context:
     """
-    An immutable context container for skill execution.
+    An immutable context container for tool execution.
 
     The Context class provides a thread-safe, immutable container for passing data
-    to skills during execution. It contains three separate namespaces:
+    to tools during execution. It contains three separate namespaces:
 
     Attributes:
         credentials (Mapping): Immutable mapping for configured secrets data
-        parameters (Mapping): Immutable mapping for skill-specific parameters
+        parameters (Mapping): Immutable mapping for tool-specific parameters
         globals (Mapping): Immutable mapping for global configuration values
     """
 

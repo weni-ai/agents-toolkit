@@ -2,18 +2,18 @@ from weni.context import Context
 from weni.responses import ResponseObject, TextResponse
 
 
-class Skill:
+class Tool:
     """
-    Base class for implementing skills.
+    Base class for implementing tools.
 
-    A skill represents a specific capability or functionality that can be executed within the platform.
-    Skills receive a Context object containing credentials, parameters and global variables, and must
+    A tool represents a specific capability or functionality that can be executed within the platform.
+    Tools receive a Context object containing credentials, parameters and global variables, and must
     return a Response object with the execution result and the components that should be used to
     display it.
 
     Example:
         ```python
-        class GetWeather(Skill):
+        class GetWeather(Tool):
             def execute(self, context: Context) -> Response:
                 # Get API key from credentials
                 api_key = context.credentials.get("weather_api_key")
@@ -31,11 +31,11 @@ class Skill:
                 )
         ```
 
-    The skill execution flow is:
-    1. The skill receives a Context object with credentials, parameters and globals
+    The tool execution flow is:
+    1. The tool receives a Context object with credentials, parameters and globals
     2. The execute() method is called with the context
-    3. The skill performs its business logic using the context data
-    4. The skill returns a Response with the result data and display components
+    3. The tool performs its business logic using the context data
+    4. The tool returns a Response with the result data and display components
     """
 
     def __new__(cls, context: Context):
@@ -49,9 +49,9 @@ class Skill:
 
     def execute(self, context: Context) -> ResponseObject:
         """
-        Execute the skill's main functionality.
+        Execute the tool's main functionality.
 
-        This method should be overridden by subclasses to implement the skill's
+        This method should be overridden by subclasses to implement the tool's
         specific behavior. The default implementation returns an empty TextResponse.
 
         Args:
