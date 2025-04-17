@@ -6,7 +6,7 @@ class Component:
     Base class for all components.
 
     Components define the structure and rules for different types of elements
-    that can be used to display skill responses. Component attributes are
+    that can be used to display tool responses. Component attributes are
     immutable class variables.
 
     Class Attributes:

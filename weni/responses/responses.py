@@ -24,9 +24,9 @@ ResponseObject = tuple[Any, dict[str, Any]]
 
 class Response:
     """
-    Base class for all skill response types.
+    Base class for all tool response types.
 
-    A Response encapsulates both the data returned by a skill and the components
+    A Response encapsulates both the data returned by a tool and the components
     used to display that data. All response data and components are immutable
     after creation.
 
