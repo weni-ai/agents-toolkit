@@ -1,15 +1,15 @@
 # Quick Start
 
-## Creating Your First Skill
+## Creating Your First Tool
 
-Let's create a simple greeting skill that provides user context:
+Let's create a simple greeting tool that provides user context:
 
 ```python
-from weni import Skill
+from weni import Tool
 from weni.context import Context
 from weni.responses import TextResponse
 
-class GreetingSkill(Skill):
+class GreetingTool(Tool):
     def execute(self, context: Context) -> TextResponse:
         name = context.parameters.get("name", "Guest")
         time_of_day = self._get_time_of_day()
@@ -24,12 +24,12 @@ class GreetingSkill(Skill):
 
 ## Using Quick Replies
 
-Here's how to create a skill that provides context for decision-making:
+Here's how to create a tool that provides context for decision-making:
 
 ```python
 from weni.responses import QuickReplyResponse
 
-class ConfirmationSkill(Skill):
+class ConfirmationTool(Tool):
     def execute(self, context: Context) -> QuickReplyResponse:
         order_id = context.parameters.get("order_id")
         order_details = self._get_order_details(order_id)
@@ -54,11 +54,11 @@ class ConfirmationSkill(Skill):
 
 The Context object provides access to:
 - Credentials (API keys, tokens)
-- Parameters (skill-specific inputs)
+- Parameters (tool-specific inputs)
 - Globals (project-wide settings)
 
 ```python
-class WeatherSkill(Skill):
+class WeatherTool(Tool):
     def execute(self, context: Context) -> TextResponse:
         # Access API key from credentials
         api_key = context.credentials.get("weather_api_key")
@@ -99,4 +99,4 @@ class WeatherSkill(Skill):
 - Understand the [Context System](../user-guide/context.md)
 
 !!! tip "Context is Key"
-    Remember that skills should provide rich, structured context data that helps the AI agent generate appropriate responses. The more relevant context you provide, the better the AI can understand the situation and respond accordingly. 
+    Remember that tools should provide rich, structured context data that helps the AI agent generate appropriate responses. The more relevant context you provide, the better the AI can understand the situation and respond accordingly. 
