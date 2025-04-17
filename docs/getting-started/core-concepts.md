@@ -1,21 +1,21 @@
 # Core Concepts
 
-## Skills
+## Tools
 
-Skills are the fundamental building blocks of the Weni Agents Toolkit. Each skill is a self-contained unit of functionality that can:
+Tools are the fundamental building blocks of the Weni Agents Toolkit. Each tool is a self-contained unit of functionality that can:
 
 - Process user input
 - Execute business logic
 - Generate appropriate responses with context for the AI agent
 
 ```python
-from weni import Skill
+from weni import Tool
 from weni.context import Context
 from weni.responses import TextResponse
 
-class WeatherSkill(Skill):
+class WeatherTool(Tool):
     def execute(self, context: Context) -> TextResponse:
-        # Skill implementation that returns context for the AI agent
+        # Tool implementation that returns context for the AI agent
         city = context.parameters.get("city", "")
         weather_data = self._fetch_weather(city)
         
@@ -29,12 +29,12 @@ class WeatherSkill(Skill):
 
 ## Context System
 
-The Context system provides a secure, immutable container for passing data to skills:
+The Context system provides a secure, immutable container for passing data to tools:
 
 ```python
 context = Context(
     credentials={"api_key": "secret123"},     # Sensitive data
-    parameters={"city": "New York"},          # Skill parameters
+    parameters={"city": "New York"},          # Tool parameters
     globals={"api_url": "https://api.example.com"}  # Global configuration
 )
 ```
@@ -63,7 +63,7 @@ response = QuickReplyResponse(
 
 ## Key Principles
 
-1. **Skills** are responsible for:
+1. **Tools** are responsible for:
    - Processing inputs
    - Executing business logic
    - Gathering relevant context
@@ -71,7 +71,7 @@ response = QuickReplyResponse(
 
 2. **Context** provides:
    - Secure credential storage
-   - Skill-specific parameters
+   - Tool-specific parameters
    - Global configuration
    - Immutable data access
 
