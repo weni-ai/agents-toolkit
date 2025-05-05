@@ -12,6 +12,40 @@ from weni.responses import (
 )
 from weni.components import Component
 
+def test_response_initialization():
+    """Test Response class initialization"""
+    data = {"key": "value"}
+    result, format = TextResponse(data=data)
+
+    assert result == data
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+
+def test_response_str_representation():
+    """Test Response string representation"""
+    data = {"key": "value"}
+    result, format = TextResponse(data=data)
+
+    assert result == data
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+
+def test_response_with_empty_data():
+    """Test Response with empty data"""
+    result, format = TextResponse(data={})
+
+    assert result == {}
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
+
+def test_response_with_complex_data():
+    """Test Response with nested data structure"""
+    data = {"nested": {"key": "value", "list": [1, 2, 3], "bool": True}}
+    result, format = TextResponse(data=data)
+
+    assert result == data
+    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+
 
 def test_text_response():
     """Test TextResponse with different configurations"""
