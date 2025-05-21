@@ -12,7 +12,7 @@ def test_rule_without_implementation():
     
     # Test that execute raises NotImplementedError
     with pytest.raises(NotImplementedError) as excinfo:
-        rule.execute(ProcessedData("test-urn", "en", {}))
+        rule.execute(ProcessedData("test-urn", {}))
     assert "Subclasses must implement the execute method" in str(excinfo.value)
     
     # Test that get_template_variables raises NotImplementedError
@@ -43,11 +43,11 @@ def test_rule_implementation():
     assert rule.template == "This is a template with {variable}"
     
     # Test execute method with data that should pass
-    processed_data = ProcessedData("test-urn", "en", {"test_key": "value"})
+    processed_data = ProcessedData("test-urn", {"test_key": "value"})
     assert rule.execute(processed_data) is True
     
     # Test execute method with data that should fail
-    processed_data = ProcessedData("test-urn", "en", {"other_key": "value"})
+    processed_data = ProcessedData("test-urn", {"other_key": "value"})
     assert rule.execute(processed_data) is False
     
     # Test get_template_variables method

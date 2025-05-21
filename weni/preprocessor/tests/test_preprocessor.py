@@ -9,13 +9,12 @@ def test_preprocessor_execution():
 
     class TestPreProcessor(PreProcessor):
         def process(self, context: PreProcessorContext) -> ProcessedData:
-            return ProcessedData("test-urn", "en", {"test": "data"})
+            return ProcessedData("test-urn", {"test": "data"})
 
     context = PreProcessorContext(params={}, payload={}, credentials={})
     result = TestPreProcessor(context)
 
     assert result.urn == "test-urn"
-    assert result.language == "en"
     assert result.data == {"test": "data"}
 
 
@@ -40,7 +39,6 @@ def test_preprocessor_context_access():
         def process(self, context: PreProcessorContext) -> ProcessedData:
             return ProcessedData(
                 "test-urn",
-                "en",
                 {
                     "param": context.params.get("key"),
                     "payload": context.payload.get("data"),
@@ -57,7 +55,6 @@ def test_preprocessor_context_access():
     result = ContextAccessPreProcessor(context)
     
     assert result.urn == "test-urn"
-    assert result.language == "en"
     assert result.data == {
         "param": "value",
         "payload": "content",
@@ -72,7 +69,7 @@ def test_preprocessor_context_immutability():
         def process(self, context: PreProcessorContext) -> ProcessedData:
             # Try to modify context
             context.params["new_key"] = "value"  # type: ignore[index]
-            return ProcessedData("test-urn", "en", {})
+            return ProcessedData("test-urn", {})
 
     context = PreProcessorContext(params={"key": "value"}, payload={}, credentials={})
     
@@ -82,9 +79,8 @@ def test_preprocessor_context_immutability():
 def test_processed_data_creation():
     """Test ProcessedData creation"""
     
-    result = ProcessedData("test-urn", "pt-br", {"key": "value"})
+    result = ProcessedData("test-urn", {"key": "value"})
     
     assert result.urn == "test-urn"
-    assert result.language == "pt-br"
     assert result.data == {"key": "value"}
 
