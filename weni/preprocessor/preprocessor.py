@@ -5,9 +5,8 @@ class ProcessedData:
     """
     The data that is processed by the preprocessor.
     """
-    def __init__(self, urn: str, language: str, data: Any):
+    def __init__(self, urn: str, data: Any):
         self.urn = urn
-        self.language = language
         self.data = data
 
 
@@ -22,7 +21,7 @@ class PreProcessor:
     ```python
     class MyPreProcessor(PreProcessor):
         def process(self, context: PreProcessorContext) -> ProcessedData:
-            return ProcessedData(context.urn, context.language, context.data)
+            return ProcessedData(context.urn, context.data)
     ```
     
     The preprocessor execution flow is:
@@ -49,7 +48,7 @@ class PreProcessor:
         ```python
         class MyPreProcessor(PreProcessor):
             def process(self, context: PreProcessorContext) -> ProcessedData:
-                return ProcessedData(context.urn, context.language, context.data)
+                return ProcessedData(context.urn, context.data)
         ```
         """
         raise NotImplementedError("Subclasses must implement the process method")
