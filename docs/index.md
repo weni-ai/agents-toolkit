@@ -1,12 +1,12 @@
 # Weni Agents Toolkit
 
-A Python library for creating and managing agent skills for the Weni platform. Build powerful conversational agents with type-safe components and a robust skill system.
+A Python library for creating and managing agent tools for the Weni platform. Build powerful conversational agents with type-safe components and a robust tool system.
 
 ## Features
 
-- 🔒 **Type-safe Skills**: Build reliable skills with type checking and validation
+- 🔒 **Type-safe Tools**: Build reliable tools with type checking and validation
 - 🛡️ **Immutable Context**: Secure handling of credentials and configuration
-- 🧩 **Modular Architecture**: Easily extend and customize skills
+- 🧩 **Modular Architecture**: Easily extend and customize tools
 - 📝 **Rich Context**: Comprehensive data structures for AI understanding
 - ✨ **Built-in Validation**: Automatic validation of responses and data
 - 🔌 **Response System**: Simple and intuitive context creation
@@ -26,11 +26,11 @@ A Python library for creating and managing agent skills for the Weni platform. B
 ## Quick Example
 
 ```python
-from weni import Skill
+from weni import Tool
 from weni.context import Context
 from weni.responses import TextResponse
 
-class GreetingSkill(Skill):
+class GreetingTool(Tool):
     def execute(self, context: Context) -> TextResponse:
         # Get user information from context
         name = context.parameters.get("name", "Guest")
