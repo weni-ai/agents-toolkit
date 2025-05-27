@@ -18,8 +18,10 @@ class PreProcessorContext:
     params: Mapping
     payload: Mapping
     credentials: Mapping
+    project: Mapping
     
-    def __init__(self, params: dict, payload: dict, credentials: dict):
+    def __init__(self, params: dict, payload: dict, credentials: dict, project: dict):
         self.params = MappingProxyType(params)
         self.payload = MappingProxyType(payload)
         self.credentials = MappingProxyType(credentials)
+        self.project = MappingProxyType(project)
