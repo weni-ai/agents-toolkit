@@ -28,13 +28,15 @@ def test_preprocessor_context_initialization():
     params = {"api_key": "secret123"}
     payload = {"user_id": "123"}
     credentials = {"env": "production"}
+    project = {"name": "Project 1", "uuid": "project-uuid"}
 
-    context = PreProcessorContext(params=params, payload=payload, credentials=credentials)
+    context = PreProcessorContext(params=params, payload=payload, credentials=credentials, project=project)
 
     assert isinstance(context.params, MappingProxyType)
     assert isinstance(context.payload, MappingProxyType)
     assert isinstance(context.credentials, MappingProxyType)
+    assert isinstance(context.project, MappingProxyType)
     assert context.params == params
     assert context.payload == payload
     assert context.credentials == credentials
-    
+    assert context.project == project
