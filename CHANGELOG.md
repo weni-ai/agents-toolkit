@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.2.1] - 2025-05-28
+
+### Added
+
+- feat: enhance PreProcessorContext to include project parameter
+
 ## [2.2.0] - 2025-05-27
 
 ### Added
