@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
-from weni_datalake_sdk.clients.client import send_event_data
-from weni_datalake_sdk.paths.events_path import EventPath
+from typing import Any, Dict, List, Optional
 
-class DatalakeEventDTO:
+class Event:
     """
     Data Transfer Object (DTO) para representar os dados de um evento a ser enviado ao Weni Datalake.
 
@@ -17,6 +15,16 @@ class DatalakeEventDTO:
         value (Any): Event value.
         metadata (Optional[Dict[str, Any]]): Additional event metadata.
     """
+    registry: List["Event"] = []
+
+    @classmethod
+    def register(cls, event: "Event") -> None:
+        cls.registry.append(event)
+    
+    @classmethod
+    def get_events(cls) -> List[Dict]:
+        return [event.to_dict() for event in cls.registry]
+
     def __init__(
         self,
         event_name: str,
@@ -51,19 +59,3 @@ class DatalakeEventDTO:
             "value": self.value,
             "metadata": self.metadata,
         }
-
-def send_datalake_event(event_dto: DatalakeEventDTO) -> Any:
-    """
-    Send an event to Weni Datalake using the official SDK.
-
-    Args:
-        event_dto (DatalakeEventDTO): Object containing the event data.
-
-    Returns:
-        Any: Response from the SDK after sending the event.
-
-    Raises:
-        Exception: Propagates SDK exceptions in case of event sending failure.
-    """
-    event_data = event_dto.to_dict()
-    return send_event_data(EventPath, event_data)
