@@ -9,7 +9,6 @@ class Event:
         event_name (str): Event name.
         key (str): Unique key for the event.
         date (str): Event date and time in ISO 8601 format.
-        project (str): Project UUID related to the event.
         contact_urn (str): Contact URN (ex: whatsapp:+55123456789).
         value_type (str): Value type (ex: 'string', 'int', etc).
         value (Any): Event value.
@@ -29,7 +28,6 @@ class Event:
         self,
         event_name: str,
         key: str,
-        project: str,
         contact_urn: str,
         value_type: str,
         value: Any,
@@ -39,7 +37,6 @@ class Event:
         self.event_name = event_name
         self.key = key
         self.date = date or datetime.now().isoformat()
-        self.project = project
         self.contact_urn = contact_urn
         self.value_type = value_type
         self.value = value
@@ -53,7 +50,6 @@ class Event:
             "event_name": self.event_name,
             "key": self.key,
             "date": self.date,
-            "project": self.project,
             "contact_urn": self.contact_urn,
             "value_type": self.value_type,
             "value": self.value,
