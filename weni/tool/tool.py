@@ -43,7 +43,8 @@ class Tool:
         instance = super().__new__(cls)
         result, format = instance.execute(context)
 
-        result.update({"events": Event.get_events()})
+        if isinstance(result, dict):
+            result.update({"events": Event.get_events()})
 
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")

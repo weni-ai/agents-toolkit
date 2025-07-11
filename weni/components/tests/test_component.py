@@ -19,7 +19,7 @@ def test_get_format_example_method_cannot_be_overridden():
 
         class ChildComponent(Component):
             @classmethod
-            def get_format_example(cls):  # type: ignore
+            def get_format_example(cls):  # type: ignore[misc]
                 pass
 
     assert "Cannot override final method 'get_format_example'" in str(exc_info.value)
