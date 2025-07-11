@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "weni-agents-toolkit"
-version = "2.3.0a5"
+version = "2.3.0a6"
 description = ""
 authors = ["Paulo Bernardo <paulo.bernardo@weni.ai>"]
 readme = "README.md"
@@ -10,7 +10,7 @@ packages = [
 exclude = ["**/tests"]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.10"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
