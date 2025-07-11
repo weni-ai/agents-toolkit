@@ -50,10 +50,41 @@ class GetAddress(Skill):
 
         # This block is where data is registered for further analysis in the future
         register_result("address", result.get("street"))
-
         # This example I'm respoonding allowing quick replies message or a location
         return TextResponse(data=result)
 ```
+
+### Sending an Event
+
+You can send custom events to the Weni Datalake using the `Event` class. This is useful for logging actions, integrations, or relevant data during skill execution.
+
+```python
+from weni.events import Event
+
+Event.register(Event(
+    event_name="event_name",
+    key="key_name",
+    contact_urn="contact_urn",
+    value_type="string",
+    value="value",
+    metadata={
+        "agent_collaboration": {
+            "agent_name": "agent_name",
+            "input_text": "input_text"
+        }
+    }
+))
+```
+
+**Parameters:**
+- `event_name`: Event name.
+- `key`: Unique key for the event.
+- `contact_urn`: Contact URN (e.g., `whatsapp:+123456789`).
+- `value_type`: Value type (`string`, `int`, etc).
+- `value`: Event value.
+- `metadata`: (Optional) Additional event metadata.
+
+Registered events are available for integration and further analysis.
 
 ## Core Concepts
 
