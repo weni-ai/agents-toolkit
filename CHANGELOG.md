@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.0] - 2025-07-14
+
+### Added
+
+- feat: add Event class to handle events
+
 ## [2.2.1] - 2025-05-28
 
 ### Added

@@ -1,4 +1,5 @@
 from weni.context import Context
+from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
 
 
@@ -41,6 +42,9 @@ class Tool:
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         result, format = instance.execute(context)
+
+        if isinstance(result, dict):
+            result.update({"events": Event.get_events()})
 
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")

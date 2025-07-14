@@ -8,6 +8,12 @@ from weni.responses import (
 	TextResponse,
 	QuickReplyResponse,
 )
+from weni.events.event import Event
+
+
+@pytest.fixture(autouse=True)
+def clear_event_registry():
+	Event.registry.clear()
 
 
 def test_tool_execution():
@@ -20,7 +26,8 @@ def test_tool_execution():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
 	result, format = TestTool(context)
 
-	assert result == {'test': 'data'}
+	# 'events' only appears if there are registered events
+	assert result == {'test': 'data', 'events': []}
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -59,6 +66,7 @@ def test_tool_context_access():
 		'urn': 'tel:+1234567890',
 		'project_name': 'Project 1',
 		'project_uuid': 'project-uuid',
+		'events': [],
 	}
 	assert format == {
 		'msg': {
@@ -78,7 +86,7 @@ def test_tool_without_execute_implementation():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
 	result, format = EmptyTool(context)
 
-	assert result == {}
+	assert result == {'events': []}
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -144,13 +152,13 @@ def test_tool_execution_order():
 	result, format = CountedTool(context)
 
 	assert execution_count == 1
-	assert result == {'count': 1}
+	assert result == {'count': 1, 'events': []}
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 	result, format = CountedTool(context)
 
 	assert execution_count == 2
-	assert result == {'count': 2}
+	assert result == {'count': 2, 'events': []}
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -164,7 +172,7 @@ def test_tool_with_complex_response():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
 	result, format = ComplexTool(context)
 
-	assert result == {'message': 'Choose an option'}
+	assert result == {'message': 'Choose an option', 'events': []}
 	assert format == {
 		'msg': {
 			'text': 'Hello, how can I help you today?',

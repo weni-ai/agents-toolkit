@@ -1,3 +1,4 @@
+# mypy: disable-error-code=misc
 import pytest
 from weni.components import (
     Component,
