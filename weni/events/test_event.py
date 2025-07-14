@@ -1,4 +1,3 @@
-import pytest
 from weni.events.event import Event
 from datetime import datetime
 
