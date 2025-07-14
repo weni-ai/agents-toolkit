@@ -26,7 +26,7 @@ def test_tool_execution():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
 	result, format = TestTool(context)
 
-	# 'events' só aparece se houver eventos registrados
+	# 'events' only appears if there are registered events
 	assert result == {'test': 'data', 'events': []}
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
