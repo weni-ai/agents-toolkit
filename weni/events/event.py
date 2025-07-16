@@ -9,7 +9,6 @@ class Event:
         event_name (str): Event name.
         key (str): Unique key for the event.
         date (str): Event date and time in ISO 8601 format.
-        contact_urn (str): Contact URN (ex: whatsapp:+55123456789).
         value_type (str): Value type (ex: 'string', 'int', etc).
         value (Any): Event value.
         metadata (Optional[Dict[str, Any]]): Additional event metadata.
@@ -28,7 +27,6 @@ class Event:
         self,
         event_name: str,
         key: str,
-        contact_urn: str,
         value_type: str,
         value: Any,
         metadata: Optional[Dict[str, Any]] = None,
@@ -37,7 +35,6 @@ class Event:
         self.event_name = event_name
         self.key = key
         self.date = date or datetime.now().isoformat()
-        self.contact_urn = contact_urn
         self.value_type = value_type
         self.value = value
         self.metadata = metadata or {}
@@ -50,7 +47,6 @@ class Event:
             "event_name": self.event_name,
             "key": self.key,
             "date": self.date,
-            "contact_urn": self.contact_urn,
             "value_type": self.value_type,
             "value": self.value,
             "metadata": self.metadata,

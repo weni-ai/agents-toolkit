@@ -9,7 +9,6 @@ def test_event_creation_and_to_dict():
     event = Event(
         event_name="test_event",
         key="test_key",
-        contact_urn="whatsapp:+123456789",
         value_type="string",
         value="test_value",
         metadata={"foo": "bar"},
@@ -18,7 +17,6 @@ def test_event_creation_and_to_dict():
     event_dict = event.to_dict()
     assert event_dict["event_name"] == "test_event"
     assert event_dict["key"] == "test_key"
-    assert event_dict["contact_urn"] == "whatsapp:+123456789"
     assert event_dict["value_type"] == "string"
     assert event_dict["value"] == "test_value"
     assert event_dict["metadata"] == {"foo": "bar"}
@@ -28,7 +26,6 @@ def test_event_register_and_get_events():
     event = Event(
         event_name="event1",
         key="key1",
-        contact_urn="urn1",
         value_type="int",
         value=42
     )
@@ -37,7 +34,6 @@ def test_event_register_and_get_events():
     assert len(events) == 1
     assert events[0]["event_name"] == "event1"
     assert events[0]["key"] == "key1"
-    assert events[0]["contact_urn"] == "urn1"
     assert events[0]["value_type"] == "int"
     assert events[0]["value"] == 42
     assert events[0]["metadata"] == {}
@@ -47,7 +43,6 @@ def test_event_metadata_default():
     event = Event(
         event_name="event2",
         key="key2",
-        contact_urn="urn2",
         value_type="string",
         value="abc"
     )
@@ -57,7 +52,6 @@ def test_event_date_auto():
     event = Event(
         event_name="event3",
         key="key3",
-        contact_urn="urn3",
         value_type="string",
         value="abc"
     )
