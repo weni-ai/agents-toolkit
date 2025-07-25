@@ -64,7 +64,6 @@ from weni.events import Event
 Event.register(Event(
     event_name="event_name",
     key="key_name",
-    contact_urn="contact_urn",
     value_type="string",
     value="value",
     metadata={
@@ -79,7 +78,6 @@ Event.register(Event(
 **Parameters:**
 - `event_name`: Event name.
 - `key`: Unique key for the event.
-- `contact_urn`: Contact URN (e.g., `whatsapp:+123456789`).
 - `value_type`: Value type (`string`, `int`, etc).
 - `value`: Event value.
 - `metadata`: (Optional) Additional event metadata.
