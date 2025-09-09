@@ -44,6 +44,8 @@ class Tool:
         result, format = instance.execute(context)
 
         if isinstance(result, dict):
+            print("Tool result:", result)
+            print("Events do get_events: ", Event.get_events())
             result.update({"events": Event.get_events()})
 
         if not isinstance(format, dict):
