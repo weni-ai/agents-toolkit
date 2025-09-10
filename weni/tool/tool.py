@@ -42,16 +42,12 @@ class Tool:
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         result, format = instance.execute(context)
-
-        if isinstance(result, dict):
-            print("Tool result:", result)
-            print("Events do get_events: ", Event.get_events())
-            result.update({"events": Event.get_events()})
+        events = Event.get_events()
 
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        return result, format
+        return result, format, events
 
     def execute(self, context: Context) -> ResponseObject:
         """
