@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.3.2] - 2025-09-27
+
+- feat : Remove condition if result is dict and get_events direct
+
+## [2.3.1] - 2025-07-25
+
+### Added
+
+- feat: remove-contact-urn-in-events
+
 ## [2.3.0] - 2025-07-14
 
 ### Added
