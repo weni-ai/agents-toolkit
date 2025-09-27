@@ -24,10 +24,11 @@ def test_tool_execution():
 			return TextResponse(data={'test': 'data'})  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format = TestTool(context)
+	result, format, events = TestTool(context)
 
-	# 'events' only appears if there are registered events
-	assert result == {'test': 'data', 'events': []}
+	# 'events' are returned separately
+	assert result == {'test': 'data'}
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -57,7 +58,7 @@ def test_tool_context_access():
 		project={'name': 'Project 1', 'uuid': 'project-uuid'},
 	)
 
-	result, format = TestTool(context)
+	result, format, events = TestTool(context)
 	assert result == {
 		'credential': 'secret123',
 		'param': 'user456',
@@ -66,8 +67,8 @@ def test_tool_context_access():
 		'urn': 'tel:+1234567890',
 		'project_name': 'Project 1',
 		'project_uuid': 'project-uuid',
-		'events': [],
 	}
+	assert events == []
 	assert format == {
 		'msg': {
 			'text': 'Hello, how can I help you today?',
@@ -84,9 +85,10 @@ def test_tool_without_execute_implementation():
 		pass
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format = EmptyTool(context)
+	result, format, events = EmptyTool(context)
 
-	assert result == {'events': []}
+	assert result == {}
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -149,16 +151,18 @@ def test_tool_execution_order():
 			return TextResponse(data={'count': execution_count})  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format = CountedTool(context)
+	result, format, events = CountedTool(context)
 
 	assert execution_count == 1
-	assert result == {'count': 1, 'events': []}
+	assert result == {'count': 1}
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
-	result, format = CountedTool(context)
+	result, format, events = CountedTool(context)
 
 	assert execution_count == 2
-	assert result == {'count': 2, 'events': []}
+	assert result == {'count': 2}
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 
@@ -170,9 +174,10 @@ def test_tool_with_complex_response():
 			return QuickReplyResponse(data={'message': 'Choose an option'}, header_type=HeaderType.TEXT, footer=True)  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format = ComplexTool(context)
+	result, format, events = ComplexTool(context)
 
-	assert result == {'message': 'Choose an option', 'events': []}
+	assert result == {'message': 'Choose an option'}
+	assert events == []
 	assert format == {
 		'msg': {
 			'text': 'Hello, how can I help you today?',
@@ -191,25 +196,28 @@ def test_tool_with_non_dict_response():
 			return TextResponse(data=['item1', 'item2', 'item3'])  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format = ListDataTool(context)
+	result, format, events = ListDataTool(context)
 
 	assert result == ['item1', 'item2', 'item3']
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 	class StringDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data='simple string response')  # type: ignore
 
-	result, format = StringDataTool(context)
+	result, format, events = StringDataTool(context)
 
 	assert result == 'simple string response'
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
 
 	class NumberDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data=42)  # type: ignore
 
-	result, format = NumberDataTool(context)
+	result, format, events = NumberDataTool(context)
 
 	assert result == 42
+	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
