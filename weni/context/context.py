@@ -14,6 +14,7 @@ class Context:
         parameters (Mapping): Immutable mapping for tool-specific parameters
         globals (Mapping): Immutable mapping for global configuration values
         contact (Mapping): Immutable mapping for contact data
+        constants (Mapping): Immutable mapping for constant values
     """
 
     credentials: Mapping
@@ -21,11 +22,13 @@ class Context:
     globals: Mapping
     contact: Mapping
     project: Mapping
+    constants: Mapping
 
-    def __init__(self, credentials: dict, parameters: dict, globals: dict, contact: dict, project: dict):
+    def __init__(self, credentials: dict, parameters: dict, globals: dict, contact: dict, project: dict, constants: dict):
         # Convert mutable dicts to immutable mappings
         self.credentials = MappingProxyType(credentials)
         self.parameters = MappingProxyType(parameters)
         self.globals = MappingProxyType(globals)
         self.contact = MappingProxyType(contact)
         self.project = MappingProxyType(project)
+        self.constants = MappingProxyType(constants)
