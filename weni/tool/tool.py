@@ -41,6 +41,8 @@ class Tool:
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
+        # Ensure we only return events from this execution
+        Event.registry.clear()
         result, format = instance.execute(context)
         events = Event.get_events()
 
