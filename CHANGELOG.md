@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.3.3] - 2026-01-22
+
+- feat: Add constants in context
+
 ## [2.3.2] - 2025-09-27
 
 - feat : Remove condition if result is dict and get_events direct
