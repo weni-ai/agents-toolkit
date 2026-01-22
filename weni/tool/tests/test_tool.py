@@ -23,7 +23,7 @@ def test_tool_execution():
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data={'test': 'data'})  # type: ignore
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events = TestTool(context)
 
 	# 'events' are returned separately
@@ -46,6 +46,7 @@ def test_tool_context_access():
 					'urn': context.contact.get('urn'),
 					'project_name': context.project.get('name'),
 					'project_uuid': context.project.get('uuid'),
+					'constants': dict(context.constants),
 				},
 				header_type=HeaderType.TEXT,
 			)  # type: ignore
@@ -56,6 +57,7 @@ def test_tool_context_access():
 		globals={'env': 'production'},
 		contact={'name': 'John Doe', 'urn': 'tel:+1234567890'},
 		project={'name': 'Project 1', 'uuid': 'project-uuid'},
+		constants={'INPUT': {'label': 'Example', 'required': True, 'default': 'Sample'}}
 	)
 
 	result, format, events = TestTool(context)
@@ -67,6 +69,7 @@ def test_tool_context_access():
 		'urn': 'tel:+1234567890',
 		'project_name': 'Project 1',
 		'project_uuid': 'project-uuid',
+		'constants': {'INPUT': {'label': 'Example', 'required': True, 'default': 'Sample'}},
 	}
 	assert events == []
 	assert format == {
@@ -84,7 +87,7 @@ def test_tool_without_execute_implementation():
 	class EmptyTool(Tool):
 		pass
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events = EmptyTool(context)
 
 	assert result == {}
@@ -101,7 +104,7 @@ def test_tool_with_invalid_format():
 			# but the second value (format) must be a dictionary - not a string
 			return {}, 'not a dictionary'  # type: ignore
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 
 	with pytest.raises(TypeError) as excinfo:
 		InvalidFormatTool(context)
@@ -131,7 +134,7 @@ def test_tool_context_immutability():
 			context.credentials['new_key'] = 'value'  # type: ignore
 			return TextResponse(data={})  # type: ignore
 
-	context = Context(credentials={'key': 'value'}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={'key': 'value'}, parameters={}, globals={}, contact={}, project={}, constants={})
 	original_credentials = context.credentials.copy()
 
 	with pytest.raises(TypeError):
@@ -150,7 +153,7 @@ def test_tool_execution_order():
 			execution_count += 1
 			return TextResponse(data={'count': execution_count})  # type: ignore
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events = CountedTool(context)
 
 	assert execution_count == 1
@@ -173,7 +176,7 @@ def test_tool_with_complex_response():
 		def execute(self, context: Context) -> ResponseObject:
 			return QuickReplyResponse(data={'message': 'Choose an option'}, header_type=HeaderType.TEXT, footer=True)  # type: ignore
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events = ComplexTool(context)
 
 	assert result == {'message': 'Choose an option'}
@@ -195,7 +198,7 @@ def test_tool_with_non_dict_response():
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data=['item1', 'item2', 'item3'])  # type: ignore
 
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events = ListDataTool(context)
 
 	assert result == ['item1', 'item2', 'item3']
