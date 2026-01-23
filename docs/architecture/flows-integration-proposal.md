@@ -478,20 +478,20 @@ gantt
 
 ```mermaid
 quadrantChart
-    title Impacto da Abstração
-    x-axis Baixo Esforço --> Alto Esforço
+    title Impacto da Abstracao
+    x-axis Baixo Esforco --> Alto Esforco
     y-axis Baixo Impacto --> Alto Impacto
     quadrant-1 Priorizar
     quadrant-2 Planejar
     quadrant-3 Delegar
     quadrant-4 Eliminar
     
-    "Redução de código": [0.2, 0.9]
-    "Padronização": [0.3, 0.85]
-    "Manutenibilidade": [0.25, 0.8]
-    "Onboarding devs": [0.4, 0.7]
-    "Error handling": [0.15, 0.75]
-    "Testabilidade": [0.35, 0.65]
+    Reducao de codigo: [0.2, 0.9]
+    Padronizacao: [0.3, 0.85]
+    Manutenibilidade: [0.25, 0.8]
+    Onboarding devs: [0.4, 0.7]
+    Error handling: [0.15, 0.75]
+    Testabilidade: [0.35, 0.65]
 ```
 
 ### Resumo de Benefícios
