@@ -2,7 +2,6 @@
 Tests for Broadcast class.
 """
 
-import pytest
 
 from weni.broadcasts.broadcast import Broadcast, BroadcastEvent
 from weni.broadcasts.messages import Text, Attachment

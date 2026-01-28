@@ -16,7 +16,7 @@ from typing import Any
 class Message(ABC):
     """
     Base class for all broadcast message types.
-    
+
     Messages are used to build payloads for the WhatsApp Broadcasts API.
     Each message type implements `format_message()` to return the
     appropriate payload structure.
@@ -26,7 +26,7 @@ class Message(ABC):
     def format_message(self) -> dict[str, Any]:
         """
         Format the message as a dictionary payload for the API.
-        
+
         Returns:
             Dictionary with the message payload.
         """
@@ -37,16 +37,17 @@ class Message(ABC):
 class Text(Message):
     """
     Simple text message.
-    
+
     Args:
         text: The message text content.
-    
+
     Example:
         ```python
         msg = Text(text="Hello! How can I help you?")
         Broadcast.send(msg)
         ```
     """
+
     text: str
 
     def format_message(self) -> dict[str, Any]:
@@ -60,14 +61,14 @@ class Text(Message):
 class Attachment(Message):
     """
     Message with attachment (image, document, video, audio).
-    
+
     Args:
         text: Optional caption text.
         image: URL of image attachment.
         document: URL of document attachment.
         video: URL of video attachment.
         audio: URL of audio attachment.
-    
+
     Example:
         ```python
         msg = Attachment(
@@ -77,6 +78,7 @@ class Attachment(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str | None = None
     image: str | None = None
     document: str | None = None
@@ -85,10 +87,10 @@ class Attachment(Message):
 
     def format_message(self) -> dict[str, Any]:
         payload: dict[str, Any] = {"type": "attachment"}
-        
+
         if self.text:
             payload["text"] = self.text
-        
+
         attachments = []
         if self.image:
             attachments.append(f"image/png:{self.image}")
@@ -98,10 +100,10 @@ class Attachment(Message):
             attachments.append(f"video/mp4:{self.video}")
         if self.audio:
             attachments.append(f"audio/mpeg:{self.audio}")
-        
+
         if attachments:
             payload["attachments"] = attachments
-        
+
         return payload
 
 
@@ -109,13 +111,13 @@ class Attachment(Message):
 class QuickReply(Message):
     """
     Message with quick reply buttons.
-    
+
     Args:
         text: The message text.
         options: List of quick reply button labels.
         header: Optional header text.
         footer: Optional footer text.
-    
+
     Example:
         ```python
         msg = QuickReply(
@@ -125,6 +127,7 @@ class QuickReply(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str
     options: list[str] = field(default_factory=list)
     header: str | None = None
@@ -136,19 +139,20 @@ class QuickReply(Message):
             "text": self.text,
             "quick_replies": self.options,
         }
-        
+
         if self.header:
             payload["header"] = {"type": "text", "text": self.header}
-        
+
         if self.footer:
             payload["footer"] = self.footer
-        
+
         return payload
 
 
 @dataclass
 class ListItem:
     """Single item in a list message."""
+
     title: str
     description: str | None = None
     uuid: str | None = None
@@ -158,14 +162,14 @@ class ListItem:
 class ListMessage(Message):
     """
     Interactive list message with selectable items.
-    
+
     Args:
         text: The message text.
         button_text: Text for the list button.
         items: List of ListItem objects.
         header: Optional header text.
         footer: Optional footer text.
-    
+
     Example:
         ```python
         msg = ListMessage(
@@ -179,6 +183,7 @@ class ListMessage(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str
     button_text: str
     items: list[ListItem] = field(default_factory=list)
@@ -194,7 +199,7 @@ class ListMessage(Message):
             if item.uuid:
                 item_dict["uuid"] = item.uuid
             list_items.append(item_dict)
-        
+
         payload: dict[str, Any] = {
             "type": "list",
             "text": self.text,
@@ -204,13 +209,13 @@ class ListMessage(Message):
                 "list_items": list_items,
             },
         }
-        
+
         if self.header:
             payload["header"] = {"type": "text", "text": self.header}
-        
+
         if self.footer:
             payload["footer"] = self.footer
-        
+
         return payload
 
 
@@ -218,14 +223,14 @@ class ListMessage(Message):
 class CTAMessage(Message):
     """
     Call-to-Action message with a URL button.
-    
+
     Args:
         text: The message text.
         url: The URL to link to.
         display_text: Text to display on the button.
         header: Optional header text.
         footer: Optional footer text.
-    
+
     Example:
         ```python
         msg = CTAMessage(
@@ -236,6 +241,7 @@ class CTAMessage(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str
     url: str
     display_text: str
@@ -252,13 +258,13 @@ class CTAMessage(Message):
                 "display_text": self.display_text,
             },
         }
-        
+
         if self.header:
             payload["header"] = {"type": "text", "text": self.header}
-        
+
         if self.footer:
             payload["footer"] = self.footer
-        
+
         return payload
 
 
@@ -266,16 +272,17 @@ class CTAMessage(Message):
 class Location(Message):
     """
     Location request message.
-    
+
     Args:
         text: The message text asking for location.
-    
+
     Example:
         ```python
         msg = Location(text="Please share your location")
         Broadcast.send(msg)
         ```
     """
+
     text: str
 
     def format_message(self) -> dict[str, Any]:
@@ -289,6 +296,7 @@ class Location(Message):
 @dataclass
 class OrderItem:
     """Single item in an order."""
+
     retailer_id: str
     name: str
     value: int
@@ -300,7 +308,7 @@ class OrderItem:
 class OrderDetails(Message):
     """
     Order details message with payment information.
-    
+
     Args:
         text: The message text.
         reference_id: Order reference ID.
@@ -319,7 +327,7 @@ class OrderDetails(Message):
         pix_key_type: PIX key type (optional).
         merchant_name: Merchant name (optional).
         pix_code: PIX code (optional).
-    
+
     Example:
         ```python
         msg = OrderDetails(
@@ -333,6 +341,7 @@ class OrderDetails(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str
     reference_id: str
     items: list[OrderItem] = field(default_factory=list)
@@ -363,38 +372,38 @@ class OrderDetails(Message):
             if item.sale_amount is not None:
                 item_dict["sale_amount"] = {"value": item.sale_amount, "offset": 100}
             order_items.append(item_dict)
-        
+
         order: dict[str, Any] = {
             "items": order_items,
             "subtotal": self.subtotal,
         }
-        
+
         if self.tax_value is not None:
             order["tax"] = {
                 "description": self.tax_description or "Tax",
                 "value": self.tax_value,
                 "offset": 100,
             }
-        
+
         if self.shipping_value is not None:
             order["shipping"] = {
                 "description": self.shipping_description or "Shipping",
                 "value": self.shipping_value,
                 "offset": 100,
             }
-        
+
         if self.discount_value is not None:
             order["discount"] = {
                 "description": self.discount_description or "Discount",
                 "value": self.discount_value,
                 "offset": 100,
             }
-        
+
         payment_settings: dict[str, Any] = {"type": self.payment_type}
-        
+
         if self.payment_link:
             payment_settings["payment_link"] = self.payment_link
-        
+
         if self.pix_key:
             payment_settings["pix_config"] = {
                 "key": self.pix_key,
@@ -402,7 +411,7 @@ class OrderDetails(Message):
                 "merchant_name": self.merchant_name or "",
                 "code": self.pix_code or "",
             }
-        
+
         return {
             "type": "order_details",
             "text": self.text,
@@ -420,11 +429,11 @@ class OrderDetails(Message):
 class Catalog(Message):
     """
     Catalog message for product browsing.
-    
+
     Args:
         text: The message text.
         thumbnail_product_retailer_id: Product ID for the thumbnail.
-    
+
     Example:
         ```python
         msg = Catalog(
@@ -434,6 +443,7 @@ class Catalog(Message):
         Broadcast.send(msg)
         ```
     """
+
     text: str
     thumbnail_product_retailer_id: str | None = None
 
@@ -443,8 +453,8 @@ class Catalog(Message):
             "text": self.text,
             "interactive_type": "catalog",
         }
-        
+
         if self.thumbnail_product_retailer_id:
             payload["thumbnail_product_retailer_id"] = self.thumbnail_product_retailer_id
-        
+
         return payload

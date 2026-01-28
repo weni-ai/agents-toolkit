@@ -12,16 +12,16 @@ Example:
         def execute(self, context: Context):
             # Send a text message
             Broadcast.send(Text(text="Processing your request..."))
-            
+
             # Do some work...
             result = some_api_call()
-            
+
             # Send an attachment
             Broadcast.send(Attachment(
                 text="Here's the result",
                 image="https://example.com/image.png"
             ))
-            
+
             return FinalResponse()
     ```
 """

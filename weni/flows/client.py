@@ -29,7 +29,7 @@ class FlowsClient:
 
         # Initialize from context
         flows = FlowsClient.from_context(context)
-        
+
         # Or directly
         flows = FlowsClient(
             base_url="https://flows.weni.ai",
@@ -88,8 +88,7 @@ class FlowsClient:
         )
         if not base_url:
             raise FlowsConfigurationError(
-                "Flows URL not found in context. "
-                "Please configure 'flows_url' in project, credentials, or globals."
+                "Flows URL not found in context. " "Please configure 'flows_url' in project, credentials, or globals."
             )
 
         # Extract JWT token (contains project_uuid in its payload)

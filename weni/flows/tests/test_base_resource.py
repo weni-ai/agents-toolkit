@@ -235,7 +235,7 @@ class TestBaseResourceHTTPMethods:
         """Test _delete makes correct request."""
         mock_response = MagicMock()
         mock_response.ok = True
-        mock_response.content = b'{}'
+        mock_response.content = b"{}"
         mock_response.json.return_value = {}
         mock_delete.return_value = mock_response
 

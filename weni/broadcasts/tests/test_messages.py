@@ -2,7 +2,6 @@
 Tests for broadcast message types.
 """
 
-import pytest
 
 from weni.broadcasts.messages import (
     Text,
@@ -71,12 +70,7 @@ class TestQuickReplyMessage:
 
     def test_format_with_header_footer(self):
         """Test QuickReply with header and footer."""
-        msg = QuickReply(
-            text="Choose one:",
-            options=["A", "B"],
-            header="Important",
-            footer="Tap to select"
-        )
+        msg = QuickReply(text="Choose one:", options=["A", "B"], header="Important", footer="Tap to select")
         payload = msg.format_message()
 
         assert payload["header"]["text"] == "Important"
@@ -94,7 +88,7 @@ class TestListMessage:
             items=[
                 ListItem(title="Option 1", description="First"),
                 ListItem(title="Option 2", description="Second"),
-            ]
+            ],
         )
         payload = msg.format_message()
 
@@ -110,11 +104,7 @@ class TestCTAMessage:
 
     def test_format_basic(self):
         """Test basic CTAMessage."""
-        msg = CTAMessage(
-            text="Visit our website",
-            url="https://example.com",
-            display_text="Open"
-        )
+        msg = CTAMessage(text="Visit our website", url="https://example.com", display_text="Open")
         payload = msg.format_message()
 
         assert payload["type"] == "cta_url"
@@ -143,12 +133,10 @@ class TestOrderDetailsMessage:
         msg = OrderDetails(
             text="Your order:",
             reference_id="ORDER-123",
-            items=[
-                OrderItem(retailer_id="SKU-1", name="Product A", value=1000, quantity=2)
-            ],
+            items=[OrderItem(retailer_id="SKU-1", name="Product A", value=1000, quantity=2)],
             total_amount=2000,
             subtotal=2000,
-            payment_type="pix"
+            payment_type="pix",
         )
         payload = msg.format_message()
 
