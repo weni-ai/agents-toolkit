@@ -8,10 +8,14 @@ from weni.tool import Tool
 from weni.context import Context
 import weni.components as Components
 import weni.responses as Responses
+from weni.flows import FlowsClient
+import weni.broadcasts as Broadcasts
 
 __all__ = [
     "Tool",
     "Context",
     "Components",
     "Responses",
+    "FlowsClient",
+    "Broadcasts",
 ]
