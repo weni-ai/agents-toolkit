@@ -5,12 +5,7 @@ This provides the foundation for sending WhatsApp messages asynchronously
 during tool execution, without blocking the main response.
 """
 
-from typing import TYPE_CHECKING
-
 from weni.broadcasts.messages import Message
-
-if TYPE_CHECKING:
-    pass
 
 
 class BroadcastEvent:

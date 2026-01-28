@@ -53,6 +53,22 @@ class TestBaseResource:
         assert "Authorization" not in headers
         assert headers["Content-Type"] == "application/json"
 
+    def test_get_headers_with_content_type(self, resource):
+        """Test _get_headers with include_content_type=True."""
+        headers = resource._get_headers(include_content_type=True)
+
+        assert headers["Authorization"] == "Bearer test-jwt"
+        assert headers["Content-Type"] == "application/json"
+        assert headers["Accept"] == "application/json"
+
+    def test_get_headers_without_content_type(self, resource):
+        """Test _get_headers with include_content_type=False."""
+        headers = resource._get_headers(include_content_type=False)
+
+        assert headers["Authorization"] == "Bearer test-jwt"
+        assert "Content-Type" not in headers
+        assert headers["Accept"] == "application/json"
+
     def test_build_url(self, resource):
         """Test URL building."""
         url = resource._build_url("/api/v2/contacts")
@@ -173,6 +189,34 @@ class TestBaseResourceHandleResponse:
 
         assert exc_info.value.status_code == 429
 
+    def test_handle_error_response_with_json_array(self, resource):
+        """Test handling error response with JSON array doesn't crash."""
+        response = MagicMock()
+        response.ok = False
+        response.status_code = 400
+        response.content = b'["error1", "error2"]'
+        response.json.return_value = ["error1", "error2"]
+
+        with pytest.raises(FlowsValidationError) as exc_info:
+            resource._handle_response(response)
+
+        assert exc_info.value.status_code == 400
+        assert "error1" in str(exc_info.value)
+
+    def test_handle_error_response_with_json_string(self, resource):
+        """Test handling error response with JSON string doesn't crash."""
+        response = MagicMock()
+        response.ok = False
+        response.status_code = 500
+        response.content = b'"Internal server error"'
+        response.json.return_value = "Internal server error"
+
+        with pytest.raises(FlowsServerError) as exc_info:
+            resource._handle_response(response)
+
+        assert exc_info.value.status_code == 500
+        assert "Internal server error" in str(exc_info.value)
+
 
 class TestBaseResourceHTTPMethods:
     """Tests for BaseResource HTTP methods."""
@@ -201,8 +245,8 @@ class TestBaseResourceHTTPMethods:
         assert result == {"data": "test"}
 
     @patch("weni.flows.resources.base.requests.post")
-    def test_post_request(self, mock_post, resource):
-        """Test _post makes correct request."""
+    def test_post_request_with_json_data(self, mock_post, resource):
+        """Test _post with json_data includes Content-Type: application/json."""
         mock_response = MagicMock()
         mock_response.ok = True
         mock_response.content = b'{"created": true}'
@@ -214,11 +258,32 @@ class TestBaseResourceHTTPMethods:
         mock_post.assert_called_once()
         call_args = mock_post.call_args
         assert call_args[1]["json"] == {"name": "test"}
+        assert call_args[1]["headers"]["Content-Type"] == "application/json"
+        assert result == {"created": True}
+
+    @patch("weni.flows.resources.base.requests.post")
+    def test_post_request_with_form_data(self, mock_post, resource):
+        """Test _post with data does NOT include Content-Type header."""
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.content = b'{"created": true}'
+        mock_response.json.return_value = {"created": True}
+        mock_post.return_value = mock_response
+
+        result = resource._post("/api/test", data={"name": "test"})
+
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args
+        assert call_args[1]["data"] == {"name": "test"}
+        # Content-Type should NOT be in headers when sending form data
+        # This allows requests to set the correct Content-Type automatically
+        assert "Content-Type" not in call_args[1]["headers"]
+        assert call_args[1]["headers"]["Accept"] == "application/json"
         assert result == {"created": True}
 
     @patch("weni.flows.resources.base.requests.patch")
-    def test_patch_request(self, mock_patch, resource):
-        """Test _patch makes correct request."""
+    def test_patch_request_with_json_data(self, mock_patch, resource):
+        """Test _patch with json_data includes Content-Type: application/json."""
         mock_response = MagicMock()
         mock_response.ok = True
         mock_response.content = b'{"updated": true}'
@@ -228,6 +293,27 @@ class TestBaseResourceHTTPMethods:
         result = resource._patch("/api/test", json_data={"name": "updated"})
 
         mock_patch.assert_called_once()
+        call_args = mock_patch.call_args
+        assert call_args[1]["headers"]["Content-Type"] == "application/json"
+        assert result == {"updated": True}
+
+    @patch("weni.flows.resources.base.requests.patch")
+    def test_patch_request_with_form_data(self, mock_patch, resource):
+        """Test _patch with data does NOT include Content-Type header."""
+        mock_response = MagicMock()
+        mock_response.ok = True
+        mock_response.content = b'{"updated": true}'
+        mock_response.json.return_value = {"updated": True}
+        mock_patch.return_value = mock_response
+
+        result = resource._patch("/api/test", data={"name": "updated"})
+
+        mock_patch.assert_called_once()
+        call_args = mock_patch.call_args
+        assert call_args[1]["data"] == {"name": "updated"}
+        # Content-Type should NOT be in headers when sending form data
+        assert "Content-Type" not in call_args[1]["headers"]
+        assert call_args[1]["headers"]["Accept"] == "application/json"
         assert result == {"updated": True}
 
     @patch("weni.flows.resources.base.requests.delete")

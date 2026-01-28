@@ -8,9 +8,33 @@ These are different from the Response components - these are for
 sending messages during tool execution, not for formatting responses.
 """
 
+import mimetypes
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
+
+
+def _get_mime_type(url: str, default_mime: str) -> str:
+    """
+    Infer MIME type from URL file extension.
+
+    Args:
+        url: The URL to extract MIME type from.
+        default_mime: Default MIME type if detection fails.
+
+    Returns:
+        The inferred MIME type or the default.
+    """
+    try:
+        parsed = urlparse(url)
+        path = parsed.path
+        mime_type, _ = mimetypes.guess_type(path)
+        if mime_type:
+            return mime_type
+    except Exception:
+        pass
+    return default_mime
 
 
 class Message(ABC):
@@ -93,13 +117,17 @@ class Attachment(Message):
 
         attachments = []
         if self.image:
-            attachments.append(f"image/png:{self.image}")
+            mime = _get_mime_type(self.image, "image/png")
+            attachments.append(f"{mime}:{self.image}")
         if self.document:
-            attachments.append(f"application/pdf:{self.document}")
+            mime = _get_mime_type(self.document, "application/pdf")
+            attachments.append(f"{mime}:{self.document}")
         if self.video:
-            attachments.append(f"video/mp4:{self.video}")
+            mime = _get_mime_type(self.video, "video/mp4")
+            attachments.append(f"{mime}:{self.video}")
         if self.audio:
-            attachments.append(f"audio/mpeg:{self.audio}")
+            mime = _get_mime_type(self.audio, "audio/mpeg")
+            attachments.append(f"{mime}:{self.audio}")
 
         if attachments:
             payload["attachments"] = attachments

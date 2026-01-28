@@ -32,9 +32,11 @@ from weni.broadcasts.messages import (
     Text,
     Attachment,
     QuickReply,
+    ListItem,
     ListMessage,
     CTAMessage,
     Location,
+    OrderItem,
     OrderDetails,
     Catalog,
 )
@@ -45,9 +47,11 @@ __all__ = [
     "Text",
     "Attachment",
     "QuickReply",
+    "ListItem",
     "ListMessage",
     "CTAMessage",
     "Location",
+    "OrderItem",
     "OrderDetails",
     "Catalog",
 ]

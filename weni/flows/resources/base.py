@@ -39,16 +39,31 @@ class BaseResource:
         """Base URL for the Flows API."""
         return self._client.base_url
 
-    @property
-    def _headers(self) -> dict[str, str]:
-        """Default headers including JWT authentication."""
-        headers = {
-            "Content-Type": "application/json",
+    def _get_headers(self, include_content_type: bool = True) -> dict[str, str]:
+        """
+        Build request headers.
+
+        Args:
+            include_content_type: Whether to include Content-Type: application/json.
+                Set to False when sending form data, as the requests library
+                will automatically set the correct Content-Type for form-encoded data.
+
+        Returns:
+            Headers dictionary with authentication and optional Content-Type.
+        """
+        headers: dict[str, str] = {
             "Accept": "application/json",
         }
+        if include_content_type:
+            headers["Content-Type"] = "application/json"
         if self._client.jwt_token:
             headers["Authorization"] = f"Bearer {self._client.jwt_token}"
         return headers
+
+    @property
+    def _headers(self) -> dict[str, str]:
+        """Default headers including JWT authentication and JSON Content-Type."""
+        return self._get_headers(include_content_type=True)
 
     def _build_url(self, path: str) -> str:
         """Build full URL from path."""
@@ -81,7 +96,11 @@ class BaseResource:
         if response.ok:
             return data
 
-        error_message = data.get("error") or data.get("detail") or data.get("message") or str(data)
+        # Handle non-dict responses (e.g., JSON arrays like ["error1", "error2"])
+        if isinstance(data, dict):
+            error_message = data.get("error") or data.get("detail") or data.get("message") or str(data)
+        else:
+            error_message = str(data)
 
         if response.status_code in (401, 403):
             raise FlowsAuthenticationError(
@@ -153,17 +172,20 @@ class BaseResource:
 
         Args:
             path: API endpoint path.
-            data: Form data to send.
-            json_data: JSON data to send.
+            data: Form data to send (Content-Type will be set automatically by requests).
+            json_data: JSON data to send (Content-Type: application/json).
             **kwargs: Additional arguments passed to requests.post().
 
         Returns:
             Parsed JSON response.
         """
         url = self._build_url(path)
+        # Only include Content-Type header when not sending form data
+        # This allows requests to set the correct Content-Type for form-encoded data
+        headers = self._get_headers(include_content_type=(data is None))
         response = requests.post(
             url,
-            headers=self._headers,
+            headers=headers,
             data=data,
             json=json_data,
             timeout=kwargs.pop("timeout", 30),
@@ -183,17 +205,20 @@ class BaseResource:
 
         Args:
             path: API endpoint path.
-            data: Form data to send.
-            json_data: JSON data to send.
+            data: Form data to send (Content-Type will be set automatically by requests).
+            json_data: JSON data to send (Content-Type: application/json).
             **kwargs: Additional arguments passed to requests.patch().
 
         Returns:
             Parsed JSON response.
         """
         url = self._build_url(path)
+        # Only include Content-Type header when not sending form data
+        # This allows requests to set the correct Content-Type for form-encoded data
+        headers = self._get_headers(include_content_type=(data is None))
         response = requests.patch(
             url,
-            headers=self._headers,
+            headers=headers,
             data=data,
             json=json_data,
             timeout=kwargs.pop("timeout", 30),

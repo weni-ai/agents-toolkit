@@ -11,6 +11,7 @@ from weni.flows.exceptions import (
     FlowsAuthenticationError,
     FlowsConfigurationError,
     FlowsNotFoundError,
+    FlowsServerError,
     FlowsValidationError,
 )
 from weni.flows.resources.base import BaseResource
@@ -22,5 +23,6 @@ __all__ = [
     "FlowsAuthenticationError",
     "FlowsConfigurationError",
     "FlowsNotFoundError",
+    "FlowsServerError",
     "FlowsValidationError",
 ]
