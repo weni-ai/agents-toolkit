@@ -56,6 +56,25 @@ class Message(ABC):
         """
         pass
 
+    def _apply_header_footer(self, payload: dict[str, Any], header: str | None, footer: str | None) -> None:
+        """
+        Apply header and footer to a message payload.
+
+        This helper method provides consistent formatting for header and footer
+        fields across message types that support them (QuickReply, ListMessage,
+        CTAMessage).
+
+        Args:
+            payload: The message payload dict to modify in-place.
+            header: Optional header text. If provided, adds a header object
+                   with type "text".
+            footer: Optional footer text. If provided, adds as a simple string.
+        """
+        if header:
+            payload["header"] = {"type": "text", "text": header}
+        if footer:
+            payload["footer"] = footer
+
 
 @dataclass
 class Text(Message):
@@ -167,13 +186,7 @@ class QuickReply(Message):
             "text": self.text,
             "quick_replies": self.options,
         }
-
-        if self.header:
-            payload["header"] = {"type": "text", "text": self.header}
-
-        if self.footer:
-            payload["footer"] = self.footer
-
+        self._apply_header_footer(payload, self.header, self.footer)
         return payload
 
 
@@ -237,13 +250,7 @@ class ListMessage(Message):
                 "list_items": list_items,
             },
         }
-
-        if self.header:
-            payload["header"] = {"type": "text", "text": self.header}
-
-        if self.footer:
-            payload["footer"] = self.footer
-
+        self._apply_header_footer(payload, self.header, self.footer)
         return payload
 
 
@@ -286,13 +293,7 @@ class CTAMessage(Message):
                 "display_text": self.display_text,
             },
         }
-
-        if self.header:
-            payload["header"] = {"type": "text", "text": self.header}
-
-        if self.footer:
-            payload["footer"] = self.footer
-
+        self._apply_header_footer(payload, self.header, self.footer)
         return payload
 
 

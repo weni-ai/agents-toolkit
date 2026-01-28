@@ -5,7 +5,19 @@ This provides the foundation for sending WhatsApp messages asynchronously
 during tool execution, without blocking the main response.
 """
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+from typing import Generator
+
 from weni.broadcasts.messages import Message
+
+# Context variable for storing pending messages per execution context.
+# This provides proper isolation between:
+# - Concurrent tool executions
+# - Sequential invocations in warm Lambda starts
+# - Multiple requests in long-running processes
+# Note: Default is None to avoid mutable default value sharing issues
+_pending_messages_var: ContextVar[list[dict] | None] = ContextVar("pending_messages", default=None)
 
 
 class BroadcastEvent:
@@ -14,9 +26,25 @@ class BroadcastEvent:
 
     Stores messages that will be sent asynchronously after tool execution.
     This allows the tool to continue processing while messages are queued.
+
+    Messages are stored in a context variable to ensure isolation between
+    different tool executions, even in warm Lambda starts or long-running
+    processes.
+
+    For proper isolation, use the context manager:
+        with BroadcastEvent.scope():
+            Broadcast.send(Text(text="Hello"))
+            # Messages are automatically isolated to this scope
     """
 
-    _pending_messages: list[dict] = []
+    @classmethod
+    def _get_messages(cls) -> list[dict]:
+        """Get the current context's message list, creating if needed."""
+        messages = _pending_messages_var.get()
+        if messages is None:
+            messages = []
+            _pending_messages_var.set(messages)
+        return messages
 
     @classmethod
     def register(cls, message: Message) -> None:
@@ -27,7 +55,8 @@ class BroadcastEvent:
             message: The Message object to register.
         """
         payload = message.format_message()
-        cls._pending_messages.append(payload)
+        messages = cls._get_messages()
+        messages.append(payload)
 
     @classmethod
     def get_pending(cls) -> list[dict]:
@@ -35,14 +64,60 @@ class BroadcastEvent:
         Get all pending messages.
 
         Returns:
-            List of message payloads.
+            List of message payloads (copy of internal list).
         """
-        return cls._pending_messages.copy()
+        return cls._get_messages().copy()
+
+    @classmethod
+    def pop_pending(cls) -> list[dict]:
+        """
+        Get and clear all pending messages atomically.
+
+        This is useful for the actual send implementation to ensure
+        messages are retrieved and cleared in one operation.
+
+        Returns:
+            List of message payloads that were pending.
+        """
+        messages = cls._get_messages()
+        result = messages.copy()
+        messages.clear()
+        return result
 
     @classmethod
     def clear(cls) -> None:
-        """Clear all pending messages."""
-        cls._pending_messages = []
+        """Clear all pending messages in the current context."""
+        cls._get_messages().clear()
+
+    @classmethod
+    @contextmanager
+    def scope(cls) -> Generator[None, None, None]:
+        """
+        Context manager for scoped broadcast message handling.
+
+        Creates an isolated scope for broadcast messages. Messages registered
+        within this scope are automatically cleared when the scope exits.
+
+        This is the recommended way to handle broadcasts in tool execution
+        to ensure proper isolation between invocations.
+
+        Example:
+            with BroadcastEvent.scope():
+                Broadcast.send(Text(text="Processing..."))
+                # do work
+                messages = BroadcastEvent.pop_pending()
+                # send messages to API
+
+        Yields:
+            None
+        """
+        # Create a new list for this scope
+        token = _pending_messages_var.set([])
+        try:
+            yield
+        finally:
+            # Reset to previous value (or default)
+            _pending_messages_var.reset(token)
 
 
 class Broadcast:
