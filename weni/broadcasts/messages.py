@@ -95,7 +95,6 @@ class Text(Message):
 
     def format_message(self) -> dict[str, Any]:
         return {
-            "type": "text",
             "text": self.text,
         }
 
@@ -129,7 +128,7 @@ class Attachment(Message):
     audio: str | None = None
 
     def format_message(self) -> dict[str, Any]:
-        payload: dict[str, Any] = {"type": "attachment"}
+        payload: dict[str, Any] = {}
 
         if self.text:
             payload["text"] = self.text
@@ -182,7 +181,6 @@ class QuickReply(Message):
 
     def format_message(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "type": "quick_reply",
             "text": self.text,
             "quick_replies": self.options,
         }
@@ -242,9 +240,8 @@ class ListMessage(Message):
             list_items.append(item_dict)
 
         payload: dict[str, Any] = {
-            "type": "list",
             "text": self.text,
-            "interactive_type": "list",
+            "interaction_type": "list",
             "list_message": {
                 "button_text": self.button_text,
                 "list_items": list_items,
@@ -285,9 +282,8 @@ class CTAMessage(Message):
 
     def format_message(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "type": "cta_url",
             "text": self.text,
-            "interactive_type": "cta_url",
+            "interaction_type": "cta_url",
             "cta_message": {
                 "url": self.url,
                 "display_text": self.display_text,
@@ -316,9 +312,8 @@ class Location(Message):
 
     def format_message(self) -> dict[str, Any]:
         return {
-            "type": "location",
             "text": self.text,
-            "interactive_type": "location",
+            "interaction_type": "location",
         }
 
 
@@ -442,9 +437,8 @@ class OrderDetails(Message):
             }
 
         return {
-            "type": "order_details",
             "text": self.text,
-            "interactive_type": "order_details",
+            "interaction_type": "order_details",
             "order_details": {
                 "reference_id": self.reference_id,
                 "payment_settings": payment_settings,
@@ -478,9 +472,8 @@ class Catalog(Message):
 
     def format_message(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
-            "type": "catalog",
             "text": self.text,
-            "interactive_type": "catalog",
+            "interaction_type": "catalog",
         }
 
         if self.thumbnail_product_retailer_id:

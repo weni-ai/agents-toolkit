@@ -94,8 +94,8 @@ class TestTextMessage:
         msg = Text(text="Hello, world!")
         payload = msg.format_message()
 
-        assert payload["type"] == "text"
         assert payload["text"] == "Hello, world!"
+        assert "type" not in payload
 
 
 class TestAttachmentMessage:
@@ -106,9 +106,9 @@ class TestAttachmentMessage:
         msg = Attachment(text="Check this out", image="https://example.com/img.png")
         payload = msg.format_message()
 
-        assert payload["type"] == "attachment"
         assert payload["text"] == "Check this out"
         assert "image/png:https://example.com/img.png" in payload["attachments"]
+        assert "type" not in payload
 
     def test_format_with_image_jpeg(self):
         """Test Attachment with JPEG image uses correct MIME type."""
@@ -189,9 +189,9 @@ class TestQuickReplyMessage:
         msg = QuickReply(text="Choose one:", options=["Yes", "No"])
         payload = msg.format_message()
 
-        assert payload["type"] == "quick_reply"
         assert payload["text"] == "Choose one:"
         assert payload["quick_replies"] == ["Yes", "No"]
+        assert "type" not in payload
 
     def test_format_with_header_footer(self):
         """Test QuickReply with header and footer."""
@@ -217,11 +217,12 @@ class TestListMessage:
         )
         payload = msg.format_message()
 
-        assert payload["type"] == "list"
         assert payload["text"] == "Select an option:"
+        assert payload["interaction_type"] == "list"
         assert payload["list_message"]["button_text"] == "View"
         assert len(payload["list_message"]["list_items"]) == 2
         assert payload["list_message"]["list_items"][0]["title"] == "Option 1"
+        assert "type" not in payload
 
 
 class TestCTAMessage:
@@ -232,9 +233,11 @@ class TestCTAMessage:
         msg = CTAMessage(text="Visit our website", url="https://example.com", display_text="Open")
         payload = msg.format_message()
 
-        assert payload["type"] == "cta_url"
+        assert payload["text"] == "Visit our website"
+        assert payload["interaction_type"] == "cta_url"
         assert payload["cta_message"]["url"] == "https://example.com"
         assert payload["cta_message"]["display_text"] == "Open"
+        assert "type" not in payload
 
 
 class TestLocationMessage:
@@ -245,9 +248,9 @@ class TestLocationMessage:
         msg = Location(text="Share your location")
         payload = msg.format_message()
 
-        assert payload["type"] == "location"
         assert payload["text"] == "Share your location"
-        assert payload["interactive_type"] == "location"
+        assert payload["interaction_type"] == "location"
+        assert "type" not in payload
 
 
 class TestOrderDetailsMessage:
@@ -265,10 +268,12 @@ class TestOrderDetailsMessage:
         )
         payload = msg.format_message()
 
-        assert payload["type"] == "order_details"
+        assert payload["text"] == "Your order:"
+        assert payload["interaction_type"] == "order_details"
         assert payload["order_details"]["reference_id"] == "ORDER-123"
         assert payload["order_details"]["total_amount"] == 2000
         assert len(payload["order_details"]["order"]["items"]) == 1
+        assert "type" not in payload
 
 
 class TestCatalogMessage:
@@ -279,8 +284,9 @@ class TestCatalogMessage:
         msg = Catalog(text="Browse products")
         payload = msg.format_message()
 
-        assert payload["type"] == "catalog"
         assert payload["text"] == "Browse products"
+        assert payload["interaction_type"] == "catalog"
+        assert "type" not in payload
 
     def test_format_with_thumbnail(self):
         """Test Catalog with thumbnail."""

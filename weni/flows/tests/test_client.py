@@ -3,7 +3,6 @@ Tests for FlowsClient.
 """
 
 import pytest
-from unittest.mock import MagicMock
 
 from weni.flows import FlowsClient
 from weni.flows.exceptions import FlowsConfigurationError
@@ -44,9 +43,9 @@ class TestFlowsClientInit:
 class TestFlowsClientFromContext:
     """Tests for FlowsClient.from_context()."""
 
-    def test_from_context_with_project_flows_url(self):
+    def test_from_context_with_project_flows_url(self, mocker):
         """Test creating client from context with flows_url in project."""
-        context = MagicMock()
+        context = mocker.MagicMock()
         context.project = {"flows_url": "https://flows.weni.ai", "flows_jwt": "test-jwt"}
         context.credentials = {}
         context.globals = {}
@@ -56,9 +55,9 @@ class TestFlowsClientFromContext:
         assert client.base_url == "https://flows.weni.ai"
         assert client.jwt_token == "test-jwt"
 
-    def test_from_context_with_credentials_flows_url(self):
+    def test_from_context_with_credentials_flows_url(self, mocker):
         """Test creating client from context with flows_url in credentials."""
-        context = MagicMock()
+        context = mocker.MagicMock()
         context.project = {}
         context.credentials = {"flows_url": "https://flows.weni.ai", "flows_jwt": "test-jwt"}
         context.globals = {}
@@ -68,9 +67,9 @@ class TestFlowsClientFromContext:
         assert client.base_url == "https://flows.weni.ai"
         assert client.jwt_token == "test-jwt"
 
-    def test_from_context_with_globals_flows_url(self):
+    def test_from_context_with_globals_flows_url(self, mocker):
         """Test creating client from context with flows_url in globals."""
-        context = MagicMock()
+        context = mocker.MagicMock()
         context.project = {}
         context.credentials = {}
         context.globals = {"flows_url": "https://flows.weni.ai"}
@@ -79,9 +78,9 @@ class TestFlowsClientFromContext:
 
         assert client.base_url == "https://flows.weni.ai"
 
-    def test_from_context_without_flows_url_raises_error(self):
+    def test_from_context_without_flows_url_raises_error(self, mocker):
         """Test that missing flows_url raises error."""
-        context = MagicMock()
+        context = mocker.MagicMock()
         context.project = {}
         context.credentials = {}
         context.globals = {}
@@ -89,9 +88,9 @@ class TestFlowsClientFromContext:
         with pytest.raises(FlowsConfigurationError, match="Flows URL not found"):
             FlowsClient.from_context(context)
 
-    def test_from_context_jwt_priority(self):
+    def test_from_context_jwt_priority(self, mocker):
         """Test JWT extraction priority: project.flows_jwt > credentials.flows_jwt > project.jwt."""
-        context = MagicMock()
+        context = mocker.MagicMock()
         context.project = {
             "flows_url": "https://flows.weni.ai",
             "flows_jwt": "project-flows-jwt",
