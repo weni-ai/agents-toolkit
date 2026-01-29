@@ -160,6 +160,44 @@ class BaseResource:
         )
         return self._handle_response(response)
 
+    def _request_with_body(
+        self,
+        method: str,
+        path: str,
+        data: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """
+        Make an HTTP request with a request body (POST, PATCH, PUT).
+
+        This is a shared helper for HTTP methods that send data in the request body.
+
+        Args:
+            method: HTTP method (e.g., "POST", "PATCH", "PUT").
+            path: API endpoint path.
+            data: Form data to send (Content-Type will be set automatically by requests).
+            json_data: JSON data to send (Content-Type: application/json).
+            **kwargs: Additional arguments passed to requests.request().
+
+        Returns:
+            Parsed JSON response.
+        """
+        url = self._build_url(path)
+        # Only include Content-Type header when not sending form data
+        # This allows requests to set the correct Content-Type for form-encoded data
+        headers = self._get_headers(include_content_type=(data is None))
+        response = requests.request(
+            method,
+            url,
+            headers=headers,
+            data=data,
+            json=json_data,
+            timeout=kwargs.pop("timeout", 30),
+            **kwargs,
+        )
+        return self._handle_response(response)
+
     def _post(
         self,
         path: str,
@@ -179,19 +217,7 @@ class BaseResource:
         Returns:
             Parsed JSON response.
         """
-        url = self._build_url(path)
-        # Only include Content-Type header when not sending form data
-        # This allows requests to set the correct Content-Type for form-encoded data
-        headers = self._get_headers(include_content_type=(data is None))
-        response = requests.post(
-            url,
-            headers=headers,
-            data=data,
-            json=json_data,
-            timeout=kwargs.pop("timeout", 30),
-            **kwargs,
-        )
-        return self._handle_response(response)
+        return self._request_with_body("POST", path, data=data, json_data=json_data, **kwargs)
 
     def _patch(
         self,
@@ -212,19 +238,7 @@ class BaseResource:
         Returns:
             Parsed JSON response.
         """
-        url = self._build_url(path)
-        # Only include Content-Type header when not sending form data
-        # This allows requests to set the correct Content-Type for form-encoded data
-        headers = self._get_headers(include_content_type=(data is None))
-        response = requests.patch(
-            url,
-            headers=headers,
-            data=data,
-            json=json_data,
-            timeout=kwargs.pop("timeout", 30),
-            **kwargs,
-        )
-        return self._handle_response(response)
+        return self._request_with_body("PATCH", path, data=data, json_data=json_data, **kwargs)
 
     def _delete(
         self,

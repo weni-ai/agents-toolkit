@@ -250,12 +250,13 @@ class TestBaseResourceHTTPMethods:
         mock_response.content = b'{"created": true}'
         mock_response.json.return_value = {"created": True}
 
-        mock_post = mocker.patch("weni.flows.resources.base.requests.post", return_value=mock_response)
+        mock_request = mocker.patch("weni.flows.resources.base.requests.request", return_value=mock_response)
 
         result = resource._post("/api/test", json_data={"name": "test"})
 
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
+        mock_request.assert_called_once()
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "POST"
         assert call_args[1]["json"] == {"name": "test"}
         assert call_args[1]["headers"]["Content-Type"] == "application/json"
         assert result == {"created": True}
@@ -267,12 +268,13 @@ class TestBaseResourceHTTPMethods:
         mock_response.content = b'{"created": true}'
         mock_response.json.return_value = {"created": True}
 
-        mock_post = mocker.patch("weni.flows.resources.base.requests.post", return_value=mock_response)
+        mock_request = mocker.patch("weni.flows.resources.base.requests.request", return_value=mock_response)
 
         result = resource._post("/api/test", data={"name": "test"})
 
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
+        mock_request.assert_called_once()
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "POST"
         assert call_args[1]["data"] == {"name": "test"}
         # Content-Type should NOT be in headers when sending form data
         # This allows requests to set the correct Content-Type automatically
@@ -287,12 +289,13 @@ class TestBaseResourceHTTPMethods:
         mock_response.content = b'{"updated": true}'
         mock_response.json.return_value = {"updated": True}
 
-        mock_patch = mocker.patch("weni.flows.resources.base.requests.patch", return_value=mock_response)
+        mock_request = mocker.patch("weni.flows.resources.base.requests.request", return_value=mock_response)
 
         result = resource._patch("/api/test", json_data={"name": "updated"})
 
-        mock_patch.assert_called_once()
-        call_args = mock_patch.call_args
+        mock_request.assert_called_once()
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "PATCH"
         assert call_args[1]["headers"]["Content-Type"] == "application/json"
         assert result == {"updated": True}
 
@@ -303,12 +306,13 @@ class TestBaseResourceHTTPMethods:
         mock_response.content = b'{"updated": true}'
         mock_response.json.return_value = {"updated": True}
 
-        mock_patch = mocker.patch("weni.flows.resources.base.requests.patch", return_value=mock_response)
+        mock_request = mocker.patch("weni.flows.resources.base.requests.request", return_value=mock_response)
 
         result = resource._patch("/api/test", data={"name": "updated"})
 
-        mock_patch.assert_called_once()
-        call_args = mock_patch.call_args
+        mock_request.assert_called_once()
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "PATCH"
         assert call_args[1]["data"] == {"name": "updated"}
         # Content-Type should NOT be in headers when sending form data
         assert "Content-Type" not in call_args[1]["headers"]
