@@ -190,8 +190,8 @@ class TestBroadcast:
 
         pending = BroadcastEvent.get_pending()
         assert len(pending) == 1
-        assert pending[0]["type"] == "text"
         assert pending[0]["text"] == "Hello!"
+        assert "type" not in pending[0]
 
     def test_send_attachment(self):
         """Test sending an attachment."""
@@ -199,7 +199,9 @@ class TestBroadcast:
 
         pending = BroadcastEvent.get_pending()
         assert len(pending) == 1
-        assert pending[0]["type"] == "attachment"
+        assert pending[0]["text"] == "Image"
+        assert "attachments" in pending[0]
+        assert "type" not in pending[0]
 
     def test_send_multiple(self):
         """Test sending multiple messages."""
@@ -208,8 +210,8 @@ class TestBroadcast:
 
         pending = BroadcastEvent.get_pending()
         assert len(pending) == 2
-        assert pending[0]["type"] == "text"
-        assert pending[1]["type"] == "attachment"
+        assert pending[0]["text"] == "Processing..."
+        assert "attachments" in pending[1]
 
     def test_send_within_scope(self):
         """Test that send works correctly within a scope."""
