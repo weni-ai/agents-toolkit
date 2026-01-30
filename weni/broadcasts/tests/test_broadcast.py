@@ -4,9 +4,11 @@ Tests for Broadcast class.
 
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import MagicMock, patch
 
-from weni.broadcasts.broadcast import Broadcast, BroadcastEvent
-from weni.broadcasts.messages import Text, Attachment
+from weni.broadcasts.broadcast import Broadcast, BroadcastEvent, _sender_var
+from weni.broadcasts.messages import Attachment, Text
+from weni.context import Context
 
 
 class TestBroadcastEvent:
@@ -222,4 +224,186 @@ class TestBroadcast:
             assert pending[0]["text"] == "Scoped message"
 
         # After scope, should be empty (or back to original state)
+        assert len(BroadcastEvent.get_pending()) == 0
+
+
+def create_context(
+    project: dict | None = None,
+    credentials: dict | None = None,
+    globals: dict | None = None,
+    contact: dict | None = None,
+) -> Context:
+    """Helper to create a Context for testing."""
+    return Context(
+        credentials=credentials or {},
+        parameters={},
+        globals=globals or {},
+        contact=contact or {},
+        project=project or {},
+    )
+
+
+class TestBroadcastConfigure:
+    """Tests for Broadcast.configure()."""
+
+    def setup_method(self):
+        """Clear state before each test."""
+        BroadcastEvent.clear()
+        _sender_var.set(None)
+
+    def teardown_method(self):
+        """Clear state after each test."""
+        _sender_var.set(None)
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_configure_creates_sender(self, mock_sender_class):
+        """Test that configure creates a BroadcastSender."""
+        mock_sender = MagicMock()
+        mock_sender_class.return_value = mock_sender
+
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        Broadcast.configure(context)
+
+        mock_sender_class.assert_called_once_with(context)
+        assert Broadcast._get_sender() == mock_sender
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_configure_can_be_called_multiple_times(self, mock_sender_class):
+        """Test that configure can be called multiple times."""
+        mock_sender1 = MagicMock()
+        mock_sender2 = MagicMock()
+        mock_sender_class.side_effect = [mock_sender1, mock_sender2]
+
+        context1 = create_context(project={"sqs_queue_url": "https://sqs/q1", "flows_url": "https://f1"})
+        context2 = create_context(project={"sqs_queue_url": "https://sqs/q2", "flows_url": "https://f2"})
+
+        Broadcast.configure(context1)
+        assert Broadcast._get_sender() == mock_sender1
+
+        Broadcast.configure(context2)
+        assert Broadcast._get_sender() == mock_sender2
+
+
+class TestBroadcastWithSQS:
+    """Tests for Broadcast.send() with SQS integration."""
+
+    def setup_method(self):
+        """Clear state before each test."""
+        BroadcastEvent.clear()
+        _sender_var.set(None)
+
+    def teardown_method(self):
+        """Clear state after each test."""
+        _sender_var.set(None)
+
+    def test_send_without_configure_only_registers(self):
+        """Test that send without configure only registers message."""
+        Broadcast.send(Text(text="Hello"))
+
+        # Message should be registered
+        pending = BroadcastEvent.get_pending()
+        assert len(pending) == 1
+        assert pending[0]["text"] == "Hello"
+
+        # No sender configured, so no SQS call
+        assert Broadcast._get_sender() is None
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_send_with_configure_sends_to_sqs(self, mock_sender_class):
+        """Test that send with configure sends to SQS."""
+        mock_sender = MagicMock()
+        mock_sender_class.return_value = mock_sender
+
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        Broadcast.configure(context)
+        Broadcast.send(Text(text="Hello SQS!"))
+
+        # Message should be registered
+        pending = BroadcastEvent.get_pending()
+        assert len(pending) == 1
+
+        # Sender should have been called
+        mock_sender.send.assert_called_once()
+        call_args = mock_sender.send.call_args
+        assert call_args[0][0]["text"] == "Hello SQS!"
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_send_many_sends_batch(self, mock_sender_class):
+        """Test that send_many uses batch send."""
+        mock_sender = MagicMock()
+        mock_sender_class.return_value = mock_sender
+
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        Broadcast.configure(context)
+        Broadcast.send_many([
+            Text(text="Message 1"),
+            Text(text="Message 2"),
+            Text(text="Message 3"),
+        ])
+
+        # Messages should be registered
+        pending = BroadcastEvent.get_pending()
+        assert len(pending) == 3
+
+        # Sender should have been called with batch
+        mock_sender.send_batch.assert_called_once()
+        call_args = mock_sender.send_batch.call_args
+        payloads = call_args[0][0]
+        assert len(payloads) == 3
+        assert payloads[0]["text"] == "Message 1"
+        assert payloads[1]["text"] == "Message 2"
+        assert payloads[2]["text"] == "Message 3"
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_send_many_empty_list(self, mock_sender_class):
+        """Test send_many with empty list does nothing."""
+        mock_sender = MagicMock()
+        mock_sender_class.return_value = mock_sender
+
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        Broadcast.configure(context)
+        Broadcast.send_many([])
+
+        # No messages registered
+        assert len(BroadcastEvent.get_pending()) == 0
+
+        # Sender batch not called
+        mock_sender.send_batch.assert_not_called()
+
+    def test_flush_returns_and_clears(self):
+        """Test that flush returns and clears messages."""
+        Broadcast.send(Text(text="Message 1"))
+        Broadcast.send(Text(text="Message 2"))
+
+        flushed = Broadcast.flush()
+
+        assert len(flushed) == 2
+        assert flushed[0]["text"] == "Message 1"
+        assert flushed[1]["text"] == "Message 2"
+
+        # Should be empty now
         assert len(BroadcastEvent.get_pending()) == 0
