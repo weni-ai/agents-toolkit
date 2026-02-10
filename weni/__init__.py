@@ -10,6 +10,7 @@ import weni.components as Components
 import weni.responses as Responses
 from weni.flows import FlowsClient
 import weni.broadcasts as Broadcasts
+import weni.tracing as Tracing
 
 __all__ = [
     "Tool",
@@ -18,4 +19,5 @@ __all__ = [
     "Responses",
     "FlowsClient",
     "Broadcasts",
+    "Tracing",
 ]
