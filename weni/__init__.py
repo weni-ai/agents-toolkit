@@ -8,10 +8,12 @@ from weni.tool import Tool
 from weni.context import Context
 import weni.components as Components
 import weni.responses as Responses
+import weni.tracing as Tracing
 
 __all__ = [
     "Tool",
     "Context",
     "Components",
     "Responses",
+    "Tracing",
 ]
