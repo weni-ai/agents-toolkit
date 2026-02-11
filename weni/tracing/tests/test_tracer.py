@@ -3,8 +3,8 @@ Tests for the tracing module.
 """
 
 import pytest
-from datetime import datetime
 from unittest.mock import patch
+from typing import Any, Mapping
 from weni.tracing import (
     TracedAgent,
     trace,
@@ -31,7 +31,8 @@ class TestTracedTool(TracedAgent, Tool):
 
     def execute(self, context: Context) -> ResponseObject:
         result = self._process_data(context)
-        data, format = TextResponse(data=result)
+        response: ResponseObject = TextResponse(data=result)  # type: ignore
+        data, format = response
         # Inject trace into data
         data = self._inject_trace(data)
         return data, format
@@ -52,7 +53,7 @@ class TestTracedPreProcessor(TracedAgent, PreProcessor):
         return ProcessedData("test-urn", data)
 
     @trace()
-    def _validate(self, context: PreProcessorContext) -> dict:
+    def _validate(self, context: PreProcessorContext) -> Mapping[Any, Any]:
         return context.payload
 
 
@@ -460,7 +461,6 @@ def test_serialize_value_other_types():
 def test_extract_args_exception():
     """Test _extract_args when exception occurs."""
     from weni.tracing.tracer import _extract_args
-    import inspect
 
     # Create a function that will cause an exception in signature inspection
     def test_func(self, arg1):
@@ -645,8 +645,7 @@ def test_inject_trace_not_initialized():
     assert "_execution_trace" not in result
     assert result == data
 
-
-def test_inject_trace_not_dict():
+def test_inject_trace_not_dict_multiple_types():
     """Test _inject_trace with non-dict data (already tested, but ensuring coverage)."""
 
     class TestTool(TracedAgent, Tool):
