@@ -1,18 +1,18 @@
 # Tracing Module
 
-O módulo `tracing` fornece capacidades de rastreamento de execução para agentes ativos (Tools) e passivos (PreProcessors, Rules, etc.).
+The `tracing` module provides execution tracking capabilities for active agents (Tools) and passive agents (PreProcessors, Rules, etc.).
 
-## Características
+## Features
 
-- ✅ Rastreamento automático de métodos com decorator `@trace()`
-- ✅ Captura de entrada, saída, duração e erros
-- ✅ Funciona com Tools (agentes ativos) e PreProcessors (agentes passivos)
-- ✅ Injeção automática de trace em dados de resposta
-- ✅ Nomenclatura genérica (`TracedAgent`) para suportar ambos os tipos
+- ✅ Automatic method tracking with `@trace()` decorator
+- ✅ Captures input, output, duration, and errors
+- ✅ Works with Tools (active agents) and PreProcessors (passive agents)
+- ✅ Automatic trace injection into response data
+- ✅ Generic naming (`TracedAgent`) to support both types
 
-## Uso Básico
+## Basic Usage
 
-### Com Tool (Agente Ativo)
+### With Tool (Active Agent)
 
 ```python
 from weni import Tool
@@ -20,164 +20,164 @@ from weni.tracing import TracedAgent, trace
 from weni.context import Context
 from weni.responses import TextResponse, ResponseObject
 
-class MinhaTool(TracedAgent, Tool):
+class MyTool(TracedAgent, Tool):
     def execute(self, context: Context) -> ResponseObject:
-        # Processar dados
-        resultado = self._processar_dados(context)
+        # Process data
+        result = self._process_data(context)
         
-        # Criar resposta
-        data, format = TextResponse(data=resultado)
+        # Create response
+        data, format = TextResponse(data=result)
         
-        # Injetar trace automaticamente
+        # Inject trace automatically
         data = self._inject_trace(data)
         
         return data, format
 
     @trace()
-    def _processar_dados(self, context: Context) -> dict:
-        # Sua lógica aqui
-        return {"resultado": "sucesso", "valor": 42}
+    def _process_data(self, context: Context) -> dict:
+        # Your logic here
+        return {"result": "success", "value": 42}
 ```
 
-### Com PreProcessor (Agente Passivo)
+### With PreProcessor (Passive Agent)
 
 ```python
 from weni.preprocessor import PreProcessor, ProcessedData
 from weni.tracing import TracedAgent, trace
 from weni.context.preprocessor_context import PreProcessorContext
 
-class MeuPreProcessor(TracedAgent, PreProcessor):
+class MyPreProcessor(TracedAgent, PreProcessor):
     def process(self, context: PreProcessorContext) -> ProcessedData:
-        # Validar dados
-        dados_validados = self._validar(context)
+        # Validate data
+        validated_data = self._validate(context)
         
-        # Preparar dados
-        data = {"dados": dados_validados}
+        # Prepare data
+        data = {"data": validated_data}
         
-        # Injetar trace automaticamente
+        # Inject trace automatically
         data = self._inject_trace(data)
         
-        return ProcessedData("urn-exemplo", data)
+        return ProcessedData("example-urn", data)
 
     @trace()
-    def _validar(self, context: PreProcessorContext) -> dict:
-        # Sua lógica de validação aqui
+    def _validate(self, context: PreProcessorContext) -> dict:
+        # Your validation logic here
         return context.payload
 ```
 
-## Opções do Decorator `@trace()`
+## `@trace()` Decorator Options
 
 ```python
-@trace(capture_input=True, capture_output=True)  # Padrão: captura tudo
-def meu_metodo(self, dados: dict) -> dict:
-    return processar(dados)
+@trace(capture_input=True, capture_output=True)  # Default: captures everything
+def my_method(self, data: dict) -> dict:
+    return process(data)
 
-@trace(capture_output=False)  # Não captura saída (dados sensíveis)
-def autenticar(self, credenciais: dict) -> str:
-    return token_secreto
+@trace(capture_output=False)  # Don't capture output (sensitive data)
+def authenticate(self, credentials: dict) -> str:
+    return secret_token
 
-@trace(capture_input=False)  # Não captura entrada
-def processar_sensivel(self, senha: str) -> dict:
+@trace(capture_input=False)  # Don't capture input
+def process_sensitive(self, password: str) -> dict:
     return {"status": "ok"}
 ```
 
-## Nome Personalizado do Agente
+## Custom Agent Name
 
 ```python
-class MinhaTool(TracedAgent, Tool):
-    AGENT_NAME = "MeuAgenteCustomizado"  # Override do nome padrão
+class MyTool(TracedAgent, Tool):
+    AGENT_NAME = "MyCustomAgent"  # Override default name
     
     @trace()
     def execute(self, context: Context) -> ResponseObject:
         # ...
 ```
 
-## Estrutura do Trace
+## Trace Structure
 
-O trace injetado tem a seguinte estrutura:
+The injected trace has the following structure:
 
 ```python
 {
     "_execution_trace": {
-        "agent_name": "NomeDoAgente",
+        "agent_name": "AgentName",
         "started_at": "2024-01-01T12:00:00.000Z",
         "completed_at": "2024-01-01T12:00:01.500Z",
         "total_duration_ms": 1500.0,
-        "status": "completed",  # ou "failed"
+        "status": "completed",  # or "failed"
         "total_steps": 2,
         "steps": [
             {
                 "order": 1,
-                "class": "MinhaTool",
-                "method": "_processar_dados",
-                "status": "ok",  # ou "failed"
+                "class": "MyTool",
+                "method": "_process_data",
+                "status": "ok",  # or "failed"
                 "input": {...},
                 "output": {...},
                 "duration_ms": 100.5
             }
         ],
-        "error_summary": "..."  # Apenas se houver erro
+        "error_summary": "..."  # Only if there's an error
     }
 }
 ```
 
-## Compatibilidade com Versões Anteriores
+## Backwards Compatibility
 
-Para manter compatibilidade, os seguintes aliases estão disponíveis:
+For backwards compatibility, the following aliases are available:
 
 ```python
-from weni.tracing import TracedProcessor  # Alias para TracedAgent
-from weni.tracing import ExecutionTracerMixin  # Alias para TracedAgent
+from weni.tracing import TracedProcessor  # Alias for TracedAgent
+from weni.tracing import ExecutionTracerMixin  # Alias for TracedAgent
 ```
 
-## Reset do Tracer
+## Reset Tracer
 
-Para resetar o tracer entre execuções:
+To reset the tracer between executions:
 
 ```python
 tool._reset_tracer()
 ```
 
-## Exemplos Avançados
+## Advanced Examples
 
-### Múltiplos Métodos Rastreados
+### Multiple Tracked Methods
 
 ```python
-class ToolComplexa(TracedAgent, Tool):
+class ComplexTool(TracedAgent, Tool):
     def execute(self, context: Context) -> ResponseObject:
-        dados = self._extrair_dados(context)
-        validados = self._validar(dados)
-        processados = self._processar(validados)
+        data = self._extract_data(context)
+        validated = self._validate(data)
+        processed = self._process(validated)
         
-        data, format = TextResponse(data=processados)
+        data, format = TextResponse(data=processed)
         return self._inject_trace(data), format
 
     @trace()
-    def _extrair_dados(self, context: Context) -> dict:
+    def _extract_data(self, context: Context) -> dict:
         return context.parameters
 
     @trace()
-    def _validar(self, dados: dict) -> dict:
-        # Validação
-        return dados
+    def _validate(self, data: dict) -> dict:
+        # Validation
+        return data
 
     @trace()
-    def _processar(self, dados: dict) -> dict:
-        # Processamento
-        return {"resultado": dados}
+    def _process(self, data: dict) -> dict:
+        # Processing
+        return {"result": data}
 ```
 
-### Tratamento de Erros
+### Error Handling
 
 ```python
-class ToolComErro(TracedAgent, Tool):
+class ToolWithError(TracedAgent, Tool):
     @trace()
-    def _metodo_com_erro(self):
-        raise ValueError("Erro de teste")
-        # O trace captura automaticamente o erro
+    def _method_with_error(self):
+        raise ValueError("Test error")
+        # The trace automatically captures the error
 ```
 
-O trace incluirá:
+The trace will include:
 - Status: "failed"
-- error_summary: "ValueError: Erro de teste"
-- Step com status "failed" e detalhes do erro
+- error_summary: "ValueError: Test error"
+- Step with "failed" status and error details
