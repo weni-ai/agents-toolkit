@@ -1,35 +1,32 @@
 # Tracing Module
 
-The `tracing` module provides execution tracking capabilities for active agents (Tools) and passive agents (PreProcessors, Rules, etc.).
+The `tracing` module provides execution tracking capabilities for Tools, PreProcessors, Rules, and other classes.
 
 ## Features
 
 - ✅ Automatic method tracking with `@trace()` decorator
 - ✅ Captures input, output, duration, and errors
-- ✅ Works with Tools (active agents) and PreProcessors (passive agents)
-- ✅ Automatic trace injection into response data
-- ✅ Generic naming (`TracedAgent`) to support both types
+- ✅ Works with Tools, PreProcessors, and Rules
+- ✅ Automatic trace return as separate variable
+- ✅ Generic naming (`Traced`) to support all types
 
 ## Basic Usage
 
-### With Tool (Active Agent)
+### With Tool
 
 ```python
 from weni import Tool
-from weni.tracing import TracedAgent, trace
+from weni.tracing import Traced, trace
 from weni.context import Context
 from weni.responses import TextResponse, ResponseObject
 
-class MyTool(TracedAgent, Tool):
+class MyTool(Traced, Tool):
     def execute(self, context: Context) -> ResponseObject:
         # Process data
         result = self._process_data(context)
         
         # Create response
         data, format = TextResponse(data=result)
-        
-        # Inject trace automatically
-        data = self._inject_trace(data)
         
         return data, format
 
@@ -39,23 +36,22 @@ class MyTool(TracedAgent, Tool):
         return {"result": "success", "value": 42}
 ```
 
-### With PreProcessor (Passive Agent)
+When executed, the Tool will return `(result, format, events, traces)` if tracing is enabled.
+
+### With PreProcessor
 
 ```python
 from weni.preprocessor import PreProcessor, ProcessedData
-from weni.tracing import TracedAgent, trace
+from weni.tracing import Traced, trace
 from weni.context.preprocessor_context import PreProcessorContext
 
-class MyPreProcessor(TracedAgent, PreProcessor):
+class MyPreProcessor(Traced, PreProcessor):
     def process(self, context: PreProcessorContext) -> ProcessedData:
         # Validate data
         validated_data = self._validate(context)
         
         # Prepare data
         data = {"data": validated_data}
-        
-        # Inject trace automatically
-        data = self._inject_trace(data)
         
         return ProcessedData("example-urn", data)
 
@@ -64,6 +60,8 @@ class MyPreProcessor(TracedAgent, PreProcessor):
         # Your validation logic here
         return context.payload
 ```
+
+When executed, the PreProcessor will return `(ProcessedData, traces)` if tracing is enabled.
 
 ## `@trace()` Decorator Options
 
@@ -81,11 +79,11 @@ def process_sensitive(self, password: str) -> dict:
     return {"status": "ok"}
 ```
 
-## Custom Agent Name
+## Custom Name
 
 ```python
-class MyTool(TracedAgent, Tool):
-    AGENT_NAME = "MyCustomAgent"  # Override default name
+class MyTool(Traced, Tool):
+    NAME = "MyCustomName"  # Override default name
     
     @trace()
     def execute(self, context: Context) -> ResponseObject:
@@ -94,30 +92,28 @@ class MyTool(TracedAgent, Tool):
 
 ## Trace Structure
 
-The injected trace has the following structure:
+The trace returned has the following structure:
 
 ```python
 {
-    "_execution_trace": {
-        "agent_name": "AgentName",
-        "started_at": "2024-01-01T12:00:00.000Z",
-        "completed_at": "2024-01-01T12:00:01.500Z",
-        "total_duration_ms": 1500.0,
-        "status": "completed",  # or "failed"
-        "total_steps": 2,
-        "steps": [
-            {
-                "order": 1,
-                "class": "MyTool",
-                "method": "_process_data",
-                "status": "ok",  # or "failed"
-                "input": {...},
-                "output": {...},
-                "duration_ms": 100.5
-            }
-        ],
-        "error_summary": "..."  # Only if there's an error
-    }
+    "name": "MyTool",
+    "started_at": "2024-01-01T12:00:00.000Z",
+    "completed_at": "2024-01-01T12:00:01.500Z",
+    "total_duration_ms": 1500.0,
+    "status": "completed",  # or "failed"
+    "total_steps": 2,
+    "steps": [
+        {
+            "order": 1,
+            "class": "MyTool",
+            "method": "_process_data",
+            "status": "ok",  # or "failed"
+            "input": {...},
+            "output": {...},
+            "duration_ms": 100.5
+        }
+    ],
+    "error_summary": "..."  # Only if there's an error
 }
 ```
 
@@ -126,8 +122,9 @@ The injected trace has the following structure:
 For backwards compatibility, the following aliases are available:
 
 ```python
-from weni.tracing import TracedProcessor  # Alias for TracedAgent
-from weni.tracing import ExecutionTracerMixin  # Alias for TracedAgent
+from weni.tracing import TracedAgent  # Alias for Traced
+from weni.tracing import TracedProcessor  # Alias for Traced
+from weni.tracing import ExecutionTracerMixin  # Alias for Traced
 ```
 
 ## Reset Tracer
@@ -143,14 +140,14 @@ tool._reset_tracer()
 ### Multiple Tracked Methods
 
 ```python
-class ComplexTool(TracedAgent, Tool):
+class ComplexTool(Traced, Tool):
     def execute(self, context: Context) -> ResponseObject:
         data = self._extract_data(context)
         validated = self._validate(data)
         processed = self._process(validated)
         
         data, format = TextResponse(data=processed)
-        return self._inject_trace(data), format
+        return data, format
 
     @trace()
     def _extract_data(self, context: Context) -> dict:
@@ -170,7 +167,7 @@ class ComplexTool(TracedAgent, Tool):
 ### Error Handling
 
 ```python
-class ToolWithError(TracedAgent, Tool):
+class ToolWithError(Traced, Tool):
     @trace()
     def _method_with_error(self):
         raise ValueError("Test error")

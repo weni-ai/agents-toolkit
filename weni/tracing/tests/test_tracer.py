@@ -183,10 +183,10 @@ def test_traced_agent_auto_init():
 
 
 def test_traced_agent_custom_name():
-    """Test custom agent name."""
+    """Test custom name."""
 
     class TestTool(TracedAgent, Tool):
-        AGENT_NAME = "CustomAgentName"
+        NAME = "CustomName"
 
         @trace()
         def _test_method(self):
@@ -195,11 +195,11 @@ def test_traced_agent_custom_name():
     tool = object.__new__(TestTool)
     tool._auto_init_tracer()
 
-    assert tool._execution_trace.agent_name == "CustomAgentName"
+    assert tool._execution_trace.name == "CustomName"
 
 
 def test_traced_agent_default_name():
-    """Test default agent name (class name)."""
+    """Test default name (class name)."""
 
     class MyCustomTool(TracedAgent, Tool):
         @trace()
@@ -209,7 +209,7 @@ def test_traced_agent_default_name():
     tool = object.__new__(MyCustomTool)
     tool._auto_init_tracer()
 
-    assert tool._execution_trace.agent_name == "MyCustomTool"
+    assert tool._execution_trace.name == "MyCustomTool"
 
 
 def test_get_trace_summary():
@@ -232,7 +232,7 @@ def test_get_trace_summary():
 
     summary = tool._get_trace_summary()
 
-    assert "agent_name" in summary
+    assert "name" in summary
     assert "started_at" in summary
     assert "completed_at" in summary
     assert "total_duration_ms" in summary
@@ -258,7 +258,7 @@ def test_inject_trace():
     result = tool._inject_trace(data)
 
     assert "_execution_trace" in result
-    assert result["_execution_trace"]["agent_name"] == "TestTool"
+    assert result["_execution_trace"]["name"] == "TestTool"
 
 
 def test_inject_trace_not_dict():
@@ -710,7 +710,7 @@ def test_execution_step_defaults():
 def test_execution_trace_defaults():
     """Test ExecutionTrace with default values."""
     trace = ExecutionTrace()
-    assert trace.agent_name == ""
+    assert trace.name == ""
     assert trace.started_at == ""
     assert trace.status == "pending"
     assert trace.steps == []
@@ -1018,14 +1018,14 @@ def test_execution_trace_with_all_fields():
     from weni.tracing import ExecutionTrace, ExecutionStep, StepStatus
 
     trace = ExecutionTrace(
-        agent_name="TestAgent",
+        name="TestAgent",
         started_at="2024-01-01T00:00:00Z",
         status="completed",
         steps=[ExecutionStep("Test", "method", StepStatus.COMPLETED)],
         error_summary="Test error",
     )
 
-    assert trace.agent_name == "TestAgent"
+    assert trace.name == "TestAgent"
     assert trace.started_at == "2024-01-01T00:00:00Z"
     assert trace.status == "completed"
     assert len(trace.steps) == 1
