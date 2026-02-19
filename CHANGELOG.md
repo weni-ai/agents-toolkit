@@ -1,4 +1,7 @@
 # Changelog
+## [2.4.0] - 2026-02-19
+
+- feat: Add execution trace for agents
 
 ## [2.3.3] - 2026-01-22
 
