@@ -33,8 +33,7 @@ class TestTracedTool(TracedAgent, Tool):
         result = self._process_data(context)
         response: ResponseObject = TextResponse(data=result)  # type: ignore
         data, format = response
-        # Inject trace into data
-        data = self._inject_trace(data)
+        # Trace is automatically returned separately by Tool.__new__
         return data, format
 
     @trace()
@@ -48,8 +47,7 @@ class TestTracedPreProcessor(TracedAgent, PreProcessor):
     def process(self, context: PreProcessorContext) -> ProcessedData:
         validated = self._validate(context)
         data = {"data": validated}
-        # Inject trace into data
-        data = self._inject_trace(data)
+        # Trace is automatically returned separately by PreProcessor.__new__
         return ProcessedData("test-urn", data)
 
     @trace()
@@ -312,16 +310,20 @@ def test_traced_tool_integration():
         constants={},
     )
 
-    # Note: Tool.__new__ intercepts, so we bypass it using object.__new__
-    tool = object.__new__(TestTracedTool)
-    tool._auto_init_tracer()
+    # Use Tool.__new__ to test the actual integration with trace return
+    result = TestTracedTool(context)
+    
+    # Tool with Traced returns (result, format, events, traces)
+    assert len(result) == 4
+    data, format, events, traces = result
 
-    result = tool.execute(context)
-    data, format = result
-
-    # Trace should be injected
-    assert "_execution_trace" in data
+    # Trace should be returned separately, not injected in data
+    assert "_execution_trace" not in data
     assert data["processed"] is True
+    assert isinstance(traces, dict)
+    assert "name" in traces
+    assert traces["name"] == "TestTracedTool"
+    assert "steps" in traces
 
 
 def test_traced_preprocessor_integration():
@@ -334,15 +336,21 @@ def test_traced_preprocessor_integration():
         project={},
     )
 
-    # Note: PreProcessor.__new__ intercepts, so we bypass it using object.__new__
-    processor = object.__new__(TestTracedPreProcessor)
-    processor._auto_init_tracer()
+    # Use PreProcessor.__new__ to test the actual integration with trace return
+    result = TestTracedPreProcessor(context)
 
-    result = processor.process(context)
+    # PreProcessor with Traced returns (ProcessedData, traces)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    processed_data, traces = result
 
-    # Trace should be injected into data
-    assert "_execution_trace" in result.data
-    assert result.data["data"] == {"test": "data"}
+    # Trace should be returned separately, not injected in data
+    assert "_execution_trace" not in processed_data.data
+    assert processed_data.data["data"] == {"test": "data"}
+    assert isinstance(traces, dict)
+    assert "name" in traces
+    assert traces["name"] == "TestTracedPreProcessor"
+    assert "steps" in traces
 
 
 def test_backwards_compatibility_aliases():
