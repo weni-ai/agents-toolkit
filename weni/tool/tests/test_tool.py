@@ -9,6 +9,7 @@ from weni.responses import (
 	QuickReplyResponse,
 )
 from weni.events.event import Event
+from weni.tracing import Traced, trace
 
 
 @pytest.fixture(autouse=True)
@@ -224,3 +225,62 @@ def test_tool_with_non_dict_response():
 	assert result == 42
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+
+
+def test_tool_with_traced_returns_tuple():
+	"""Test that Tool with Traced returns tuple (result, format, events, traces)"""
+	
+	class TracedTool(Traced, Tool):
+		def execute(self, context: Context) -> ResponseObject:
+			processed = self._process_data(context)
+			return TextResponse(data=processed)  # type: ignore
+		
+		@trace()
+		def _process_data(self, context: Context) -> dict:
+			return {"processed": True, "value": 42}
+	
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
+	
+	# Tool with Traced should return tuple with traces
+	result = TracedTool(context)
+	
+	# Should return tuple (result, format, events, traces)
+	assert isinstance(result, tuple)
+	assert len(result) == 4
+	data, format, events, traces = result
+	
+	# Verify data
+	assert data == {"processed": True, "value": 42}
+	assert isinstance(format, dict)
+	assert isinstance(events, list)
+	
+	# Verify traces structure
+	assert isinstance(traces, dict)
+	assert "name" in traces
+	assert traces["name"] == "TracedTool"
+	assert "steps" in traces
+	assert "started_at" in traces
+	assert "status" in traces
+	assert len(traces["steps"]) > 0  # Should have at least one step from _process_data
+
+
+def test_tool_without_traced_returns_three_values():
+	"""Test that Tool without Traced returns only (result, format, events)"""
+	
+	class RegularTool(Tool):
+		def execute(self, context: Context) -> ResponseObject:
+			return TextResponse(data={"test": "data"})  # type: ignore
+	
+	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
+	
+	# Tool without Traced should return only (result, format, events)
+	result = RegularTool(context)
+	
+	# Should return tuple with 3 values, not 4
+	assert isinstance(result, tuple)
+	assert len(result) == 3
+	data, format, events = result
+	
+	assert data == {"test": "data"}
+	assert isinstance(format, dict)
+	assert isinstance(events, list)
