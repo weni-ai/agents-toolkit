@@ -1,4 +1,5 @@
 import pytest
+from typing import Any, Mapping
 
 from weni.preprocessor.preprocessor import PreProcessor, ProcessedData
 from weni.context.preprocessor_context import PreProcessorContext
@@ -96,7 +97,7 @@ def test_preprocessor_with_traced_returns_tuple():
             return ProcessedData("test-urn", {"data": validated})
         
         @trace()
-        def _validate(self, context: PreProcessorContext) -> dict:
+        def _validate(self, context: PreProcessorContext) -> Mapping[Any, Any]:
             return context.payload
     
     context = PreProcessorContext(
