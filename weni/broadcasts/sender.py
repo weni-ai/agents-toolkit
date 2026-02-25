@@ -69,13 +69,17 @@ class BroadcastSender:
         self.context = context
         self._sqs_client = sqs_client
 
-        # Extract configuration
-        self.queue_url = self._get_config("sqs_queue_url", "BROADCAST_SQS_QUEUE_URL")
-        self.flows_url = self._get_config("flows_url", "FLOWS_BASE_URL")
+        # Extract configuration (required configs are guaranteed non-None by _get_config)
+        queue_url = self._get_config("sqs_queue_url", "BROADCAST_SQS_QUEUE_URL")
+        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL")
+        assert queue_url is not None
+        assert flows_url is not None
+
+        self.queue_url: str = queue_url
+        self.flows_url: str = flows_url
         self.jwt_token = self._get_jwt_token()
         self.project_uuid = self._get_config("project_uuid", "PROJECT_UUID", required=False)
 
-        # Detect FIFO queue by URL suffix
         self.is_fifo = self.queue_url.endswith(".fifo")
 
     def _get_config(self, key: str, env_var: str, required: bool = True) -> str | None:
