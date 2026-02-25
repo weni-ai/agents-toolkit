@@ -9,7 +9,8 @@ from .tracer import (
     ExecutionStep,
     ExecutionTrace,
     StepStatus,
-    TracedAgent,
+    Traced,
+    TracedAgent,  # Backwards compatibility alias
     TracedProcessor,  # Backwards compatibility alias
     ExecutionTracerMixin,  # Backwards compatibility alias
     trace,
@@ -19,7 +20,8 @@ __all__ = [
     "ExecutionStep",
     "ExecutionTrace",
     "StepStatus",
-    "TracedAgent",
+    "Traced",
+    "TracedAgent",  # Backwards compatibility
     "TracedProcessor",  # Backwards compatibility
     "ExecutionTracerMixin",  # Backwards compatibility
     "trace",
