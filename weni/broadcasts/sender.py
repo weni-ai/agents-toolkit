@@ -3,10 +3,14 @@ SQS-based broadcast sender.
 
 This module provides the functionality to send broadcast messages
 to an SQS queue for asynchronous processing by a Flows worker.
+
+Supports both standard and FIFO queues. FIFO queues are automatically
+detected by the .fifo suffix in the queue URL.
 """
 
 import json
 import os
+import uuid
 from typing import Any
 
 import boto3
@@ -70,6 +74,9 @@ class BroadcastSender:
         self.flows_url = self._get_config("flows_url", "FLOWS_BASE_URL")
         self.jwt_token = self._get_jwt_token()
         self.project_uuid = self._get_config("project_uuid", "PROJECT_UUID", required=False)
+
+        # Detect FIFO queue by URL suffix
+        self.is_fifo = self.queue_url.endswith(".fifo")
 
     def _get_config(self, key: str, env_var: str, required: bool = True) -> str | None:
         """
@@ -138,6 +145,29 @@ class BroadcastSender:
             self._sqs_client = boto3.client("sqs")
         return self._sqs_client
 
+    def _get_message_group_id(self) -> str:
+        """
+        Get the MessageGroupId for FIFO queues.
+
+        Uses project_uuid if available, otherwise uses a default group.
+        This ensures messages for the same project are processed in order.
+
+        Returns:
+            The MessageGroupId string.
+        """
+        return self.project_uuid or "default-broadcast-group"
+
+    def _generate_deduplication_id(self) -> str:
+        """
+        Generate a unique MessageDeduplicationId for FIFO queues.
+
+        Uses UUID4 to ensure each message is unique and processed.
+
+        Returns:
+            A unique deduplication ID.
+        """
+        return str(uuid.uuid4())
+
     def build_payload(self, message_payload: dict[str, Any]) -> dict[str, Any]:
         """
         Build the full SQS message payload.
@@ -176,6 +206,9 @@ class BroadcastSender:
         """
         Send a message payload to the SQS queue.
 
+        For FIFO queues, automatically includes MessageGroupId and
+        MessageDeduplicationId to ensure proper ordering and deduplication.
+
         Args:
             message_payload: The formatted message from Message.format_message().
 
@@ -187,11 +220,18 @@ class BroadcastSender:
         """
         payload = self.build_payload(message_payload)
 
+        send_kwargs: dict[str, Any] = {
+            "QueueUrl": self.queue_url,
+            "MessageBody": json.dumps(payload),
+        }
+
+        # Add FIFO-specific parameters
+        if self.is_fifo:
+            send_kwargs["MessageGroupId"] = self._get_message_group_id()
+            send_kwargs["MessageDeduplicationId"] = self._generate_deduplication_id()
+
         try:
-            response = self.sqs_client.send_message(
-                QueueUrl=self.queue_url,
-                MessageBody=json.dumps(payload),
-            )
+            response = self.sqs_client.send_message(**send_kwargs)
             return response
         except ClientError as e:
             raise BroadcastSenderError(f"Failed to send message to SQS: {e}") from e
@@ -199,6 +239,9 @@ class BroadcastSender:
     def send_batch(self, message_payloads: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Send multiple message payloads to the SQS queue in a batch.
+
+        For FIFO queues, automatically includes MessageGroupId and
+        MessageDeduplicationId for each entry.
 
         Args:
             message_payloads: List of formatted messages.
@@ -215,7 +258,17 @@ class BroadcastSender:
         entries = []
         for i, msg_payload in enumerate(message_payloads):
             payload = self.build_payload(msg_payload)
-            entries.append({"Id": str(i), "MessageBody": json.dumps(payload)})
+            entry: dict[str, Any] = {
+                "Id": str(i),
+                "MessageBody": json.dumps(payload),
+            }
+
+            # Add FIFO-specific parameters
+            if self.is_fifo:
+                entry["MessageGroupId"] = self._get_message_group_id()
+                entry["MessageDeduplicationId"] = self._generate_deduplication_id()
+
+            entries.append(entry)
 
         try:
             response = self.sqs_client.send_message_batch(

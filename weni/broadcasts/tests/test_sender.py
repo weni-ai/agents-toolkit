@@ -449,3 +449,171 @@ class TestBroadcastSenderLazyClient:
         client2 = sender.sqs_client
         assert mock_boto3.client.call_count == 1
         assert client2 == mock_client
+
+
+class TestBroadcastSenderFifo:
+    """Tests for FIFO queue support."""
+
+    def test_is_fifo_detected_by_url_suffix(self):
+        """Test that FIFO queues are detected by .fifo suffix."""
+        fifo_context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/my-queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        standard_context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/my-queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        fifo_sender = BroadcastSender(fifo_context, sqs_client=mock_sqs)
+        standard_sender = BroadcastSender(standard_context, sqs_client=mock_sqs)
+
+        assert fifo_sender.is_fifo is True
+        assert standard_sender.is_fifo is False
+
+    def test_message_group_id_uses_project_uuid(self):
+        """Test that MessageGroupId uses project_uuid when available."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+                "project_uuid": "proj-123-abc",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+
+        assert sender._get_message_group_id() == "proj-123-abc"
+
+    def test_message_group_id_default_fallback(self):
+        """Test that MessageGroupId falls back to default when no project_uuid."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+
+        assert sender._get_message_group_id() == "default-broadcast-group"
+
+    def test_deduplication_id_is_unique(self):
+        """Test that each deduplication ID is unique."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+
+        ids = [sender._generate_deduplication_id() for _ in range(100)]
+        assert len(set(ids)) == 100  # All unique
+
+    def test_send_fifo_includes_fifo_params(self):
+        """Test that send includes FIFO parameters for FIFO queues."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+                "project_uuid": "proj-uuid-123",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        mock_sqs.send_message.return_value = {"MessageId": "msg-123"}
+
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        sender.send({"text": "Hello FIFO!"})
+
+        call_args = mock_sqs.send_message.call_args
+        assert call_args.kwargs["MessageGroupId"] == "proj-uuid-123"
+        assert "MessageDeduplicationId" in call_args.kwargs
+        # Verify deduplication ID is a valid UUID format
+        assert len(call_args.kwargs["MessageDeduplicationId"]) == 36
+
+    def test_send_standard_excludes_fifo_params(self):
+        """Test that send excludes FIFO parameters for standard queues."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        mock_sqs.send_message.return_value = {"MessageId": "msg-123"}
+
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        sender.send({"text": "Hello Standard!"})
+
+        call_args = mock_sqs.send_message.call_args
+        assert "MessageGroupId" not in call_args.kwargs
+        assert "MessageDeduplicationId" not in call_args.kwargs
+
+    def test_send_batch_fifo_includes_fifo_params(self):
+        """Test that send_batch includes FIFO parameters for each entry."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue.fifo",
+                "flows_url": "https://flows.weni.ai",
+                "project_uuid": "proj-uuid",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        mock_sqs.send_message_batch.return_value = {
+            "Successful": [{"Id": "0"}, {"Id": "1"}],
+            "Failed": [],
+        }
+
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        sender.send_batch([{"text": "Msg 1"}, {"text": "Msg 2"}])
+
+        call_args = mock_sqs.send_message_batch.call_args
+        entries = call_args.kwargs["Entries"]
+
+        assert len(entries) == 2
+        for entry in entries:
+            assert entry["MessageGroupId"] == "proj-uuid"
+            assert "MessageDeduplicationId" in entry
+
+        # Deduplication IDs should be unique
+        dedup_ids = [e["MessageDeduplicationId"] for e in entries]
+        assert len(set(dedup_ids)) == 2
+
+    def test_send_batch_standard_excludes_fifo_params(self):
+        """Test that send_batch excludes FIFO parameters for standard queues."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            }
+        )
+
+        mock_sqs = MagicMock()
+        mock_sqs.send_message_batch.return_value = {
+            "Successful": [{"Id": "0"}],
+            "Failed": [],
+        }
+
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        sender.send_batch([{"text": "Msg 1"}])
+
+        call_args = mock_sqs.send_message_batch.call_args
+        entries = call_args.kwargs["Entries"]
+
+        for entry in entries:
+            assert "MessageGroupId" not in entry
+            assert "MessageDeduplicationId" not in entry

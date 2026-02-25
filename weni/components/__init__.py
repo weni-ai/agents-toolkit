@@ -9,6 +9,7 @@ from .component import (
     CTAMessage,
     Location,
     OrderDetails,
+    FinalResponse,
 )
 
 
@@ -23,4 +24,5 @@ __all__ = [
     "CTAMessage",
     "Location",
     "OrderDetails",
+    "FinalResponse",
 ]

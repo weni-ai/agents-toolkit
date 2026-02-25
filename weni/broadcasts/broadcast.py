@@ -280,3 +280,28 @@ class Broadcast:
             List of message payloads that were pending.
         """
         return BroadcastEvent.pop_pending()
+
+    @staticmethod
+    def get_broadcasts() -> list[dict]:
+        """
+        Get all broadcasts that were sent during this execution.
+
+        Returns a copy of all messages that were registered via send().
+        This is intended to be passed to FinalResponse so Nexus has
+        context about what broadcasts were dispatched.
+
+        Returns:
+            List of message payloads that were sent.
+
+        Example:
+            ```python
+            Broadcast.configure(context)
+            Broadcast.send(Text(text="Hello!"))
+
+            return FinalResponse(
+                data=result,
+                broadcasts=Broadcast.get_broadcasts(),
+            )
+            ```
+        """
+        return BroadcastEvent.get_pending()
