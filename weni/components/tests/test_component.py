@@ -170,8 +170,8 @@ class TestFinalResponse:
         result = response.to_dict()
 
         assert result == {
-            "is_final_response": True,
-            "broadcasts": broadcasts,
+            "is_final_output": True,
+            "messages": broadcasts,
         }
 
     def test_to_dict_empty_broadcasts(self):
@@ -179,14 +179,14 @@ class TestFinalResponse:
         result = response.to_dict()
 
         assert result == {
-            "is_final_response": True,
-            "broadcasts": [],
+            "is_final_output": True,
+            "messages": [],
         }
 
     def test_is_final_response_false(self):
         response = FinalResponse(is_final_response=False)
         assert response.is_final_response is False
-        assert response.to_dict()["is_final_response"] is False
+        assert response.to_dict()["is_final_output"] is False
 
     def test_is_not_a_component_subclass(self):
         """FinalResponse carries runtime data, not class-level format descriptors."""
