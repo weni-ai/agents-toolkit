@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "weni-agents-toolkit"
-version = "2.4.0"
+version = "2.4.1a3"
 description = ""
 authors = ["Paulo Bernardo <paulo.bernardo@weni.ai>"]
 readme = "README.md"

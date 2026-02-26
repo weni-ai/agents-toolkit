@@ -2,22 +2,22 @@
 Execution Tracer Module.
 
 Provides automatic tracing for method execution flow.
-Just inherit from TracedAgent and use @trace decorator on methods.
+Just inherit from Traced and use @trace decorator on methods.
 
 Usage:
-    class MyPreProcessor(TracedAgent, PreProcessor):
+    class MyPreProcessor(Traced, PreProcessor):
 
         @trace()
         def _my_method(self, data):
             return {"processed": True}
 
-    class MyTool(TracedAgent, Tool):
+    class MyTool(Traced, Tool):
 
         @trace()
         def execute(self, context: Context) -> ResponseObject:
             return TextResponse(data={"result": "success"})
 
-The trace is automatically added to ProcessedData results or Response data.
+The trace is automatically returned as a separate variable in the execution results.
 """
 
 import functools
@@ -54,7 +54,7 @@ class ExecutionStep:
 class ExecutionTrace:
     """Container for all execution steps."""
 
-    agent_name: str = ""
+    name: str = ""
     started_at: str = ""
     status: str = "pending"
     steps: List[ExecutionStep] = field(default_factory=list)
@@ -142,7 +142,7 @@ def trace(
 
     This decorator automatically tracks method execution, including input arguments,
     output values, execution time, and errors. It requires the class to inherit
-    from TracedAgent.
+    from Traced.
 
     Args:
         capture_input: Whether to capture input arguments.
@@ -150,7 +150,7 @@ def trace(
 
     Example:
         ```python
-        class MyAgent(TracedAgent, Tool):
+        class MyTool(Traced, Tool):
             @trace()
             def execute(self, context: Context) -> ResponseObject:
                 return TextResponse(data={"result": "success"})
@@ -236,34 +236,29 @@ def trace(
     return decorator
 
 
-class TracedAgent:
+class Traced:
     """
     Base class that provides automatic execution tracing.
 
-    This class can be used as a mixin with Tool or PreProcessor classes to enable
+    This class can be used as a mixin with Tool, PreProcessor, or Rule classes to enable
     automatic execution tracing. Just inherit from this class and use @trace decorator
     on methods you want to track.
 
-    The trace is automatically added to any dict result that goes through the execution.
-    For Tools, the trace is injected into the response data.
-    For PreProcessors, the trace is injected into the ProcessedData.
-
     Attributes:
-        AGENT_NAME (str): Override this class variable to set a custom agent name.
-                         Defaults to the class name if not set.
+        NAME (str): Override this class variable to set a custom name.
+                    Defaults to the class name if not set.
 
     Example:
         ```python
         from weni import Tool
-        from weni.tracing import TracedAgent, trace
+        from weni.tracing import Traced, trace
         from weni.context import Context
         from weni.responses import TextResponse
 
-        class MyTool(TracedAgent, Tool):
+        class MyTool(Traced, Tool):
             def execute(self, context: Context) -> ResponseObject:
                 result = self._process_data(context)
                 data, format = TextResponse(data=result)
-                # Trace is automatically injected into data
                 return data, format
 
             @trace()
@@ -273,14 +268,13 @@ class TracedAgent:
 
         ```python
         from weni.preprocessor import PreProcessor, ProcessedData
-        from weni.tracing import TracedAgent, trace
+        from weni.tracing import Traced, trace
         from weni.context.preprocessor_context import PreProcessorContext
 
-        class MyPreProcessor(TracedAgent, PreProcessor):
+        class MyPreProcessor(Traced, PreProcessor):
             def process(self, context: PreProcessorContext) -> ProcessedData:
                 validated = self._validate(context)
                 data = {"data": validated}
-                # Trace is automatically injected into data
                 return ProcessedData("urn", data)
 
             @trace()
@@ -292,15 +286,15 @@ class TracedAgent:
     _execution_trace: ExecutionTrace
     _tracer_initialized: bool = False
 
-    # Override this in your class to set a custom agent name
-    AGENT_NAME: str = ""
+    # Override this in your class to set a custom name
+    NAME: str = ""
 
     def _auto_init_tracer(self) -> None:
         """Auto-initialize tracer on first traced method call."""
         if not self._tracer_initialized:
-            agent_name = self.AGENT_NAME or self.__class__.__name__
+            name = self.NAME or self.__class__.__name__
             self._execution_trace = ExecutionTrace(
-                agent_name=agent_name,
+                name=name,
                 started_at=datetime.utcnow().isoformat() + "Z",
                 status="running",
             )
@@ -362,7 +356,7 @@ class TracedAgent:
                 pass
 
         trace_data = {
-            "agent_name": self._execution_trace.agent_name,
+            "name": self._execution_trace.name,
             "started_at": self._execution_trace.started_at,
             "completed_at": completed_at,
             "total_duration_ms": duration,
@@ -393,6 +387,7 @@ class TracedAgent:
             del self._execution_trace
 
 
-# Alias for backwards compatibility
-TracedProcessor = TracedAgent
-ExecutionTracerMixin = TracedAgent
+# Aliases for backwards compatibility
+TracedAgent = Traced
+TracedProcessor = Traced
+ExecutionTracerMixin = Traced

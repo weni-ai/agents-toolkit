@@ -30,9 +30,18 @@ class PreProcessor:
     3. The preprocessor performs its business logic using the context data
     4. The preprocessor returns a ProcessedData object with the processed data
     """
-    def __new__(cls, context: PreProcessorContext) -> ProcessedData:  # type: ignore
+    def __new__(cls, context: PreProcessorContext):  # type: ignore
         instance = super().__new__(cls)
-        return instance.process(context)
+        processed_data = instance.process(context)
+        
+        # It always returns traces. If the instance inherits from Traced and the trace is initialized,
+        # retrieves the traces. Otherwise, it returns an empty dictionary.
+        traces = {}
+        if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
+            if instance._tracer_initialized:
+                traces = instance._get_trace_summary()
+        
+        return processed_data, traces
 
     def process(self, context: PreProcessorContext) -> ProcessedData:
         """
