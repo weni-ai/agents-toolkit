@@ -34,16 +34,14 @@ class PreProcessor:
         instance = super().__new__(cls)
         processed_data = instance.process(context)
         
-        # Se a instância herda de Traced, obtém o trace e retorna separadamente
-        traces = None
+        # It always returns traces. If the instance inherits from Traced and the trace is initialized,
+        # retrieves the traces. Otherwise, it returns an empty dictionary.
+        traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
             if instance._tracer_initialized:
                 traces = instance._get_trace_summary()
         
-        if traces is not None:
-            return processed_data, traces
-        
-        return processed_data
+        return processed_data, traces
 
     def process(self, context: PreProcessorContext) -> ProcessedData:
         """
