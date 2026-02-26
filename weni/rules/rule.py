@@ -5,65 +5,57 @@ class Rule:
     """
     Base class for implementing rules.
     
-    The execute() method always returns a tuple (result, traces).
-    If Traced is used and tracing is enabled, traces will contain execution trace data.
-    Otherwise, traces will be an empty dictionary.
+    Rules can be used in two ways:
+    1. Direct execution: `result, traces = Rule(processed_data)` - returns (bool, traces)
+    2. Instance execution: `rule = Rule()` then `result = rule.execute(processed_data)` - returns bool
+    
+    The execute() method should return only bool. The traces are automatically added by __new__()
+    when called directly. When using execute() on an instance, it returns only the boolean result.
     """
     template: str = ""
     
-    def execute(self, data: ProcessedData) -> tuple[bool, Dict[str, Any]]:
+    def __new__(cls, data: ProcessedData = None):  # type: ignore
+        """
+        If called with ProcessedData, executes the rule and returns (result, traces).
+        Otherwise, returns a normal instance.
+        """
+        instance = super().__new__(cls)
+        
+        # If no data provided, return instance normally
+        if data is None:
+            return instance
+        
+        # Execute the rule - execute() returns only bool
+        result = instance.execute(data)
+        
+        # Always returns traces. If the instance inherits from Traced and the trace is initialized,
+        # retrieves the traces. Otherwise, returns an empty dictionary.
+        traces = {}
+        if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
+            if instance._tracer_initialized:
+                traces = instance._get_trace_summary()
+        
+        return result, traces
+    
+    def execute(self, data: ProcessedData) -> bool:
         """
         Execute the rule's main functionality.
         
         Subclasses should override this method to implement their rule logic.
+        The method should return only the boolean result. Traces are automatically added
+        when using Rule(data) directly via __new__().
         
         Returns:
-            tuple[bool, Dict[str, Any]]: Always returns a tuple of (result, traces).
-                                        If the class inherits from Traced and tracing is enabled,
-                                        traces will contain the execution trace data.
-                                        Otherwise, traces will be an empty dictionary.
-        """
-        # Chama a implementação da subclasse
-        # Se a subclasse sobrescreveu execute(), o Python vai chamar o método da subclasse
-        # através do mecanismo de herança normal, então este método não será chamado.
-        # Para que o trace funcione, subclasses que usam Traced devem chamar
-        # super().execute(data) ou usar _wrap_execute_result() manualmente.
-        result = self._execute_impl(data)
-        return self._wrap_execute_result(result)
-    
-    def _execute_impl(self, data: ProcessedData) -> bool:
-        """
-        Internal implementation of execute. 
+            bool: The result of the rule execution (True/False)
         
-        Subclasses should override this method to implement their rule logic.
-        The execute() method will automatically handle trace return if Traced is used.
+        Example:
+            ```python
+            def execute(self, data: ProcessedData) -> bool:
+                # Simple rule logic - return only bool
+                return "test_key" in data.data and data.data["test_key"] == "value"
+            ```
         """
         raise NotImplementedError("Subclasses must implement the execute method")
-    
-    def _wrap_execute_result(self, result: bool) -> tuple[bool, Dict[str, Any]]:
-        """
-        Wraps the execute result with trace information.
-        
-        Always returns a tuple (result, traces). If Traced is used and tracing is enabled,
-        traces will contain the execution trace data. Otherwise, traces will be an empty dictionary.
-        
-        Subclasses that override execute() directly should call this method to ensure
-        trace support works correctly:
-        
-        ```python
-        def execute(self, data: ProcessedData):
-            result = self._my_logic(data)
-            return self._wrap_execute_result(result)
-        ```
-        """
-        # If the instance inherits from Traced and the trace is initialized, it obtains the traces.
-        if hasattr(self, '_get_trace_summary') and hasattr(self, '_tracer_initialized'):
-            if self._tracer_initialized:
-                traces = self._get_trace_summary()
-                return result, traces
-        
-        # Otherwise, it returns an empty dictionary.
-        return result, {}
     
     def get_template_variables(self, data: Any) -> Dict:
         """
