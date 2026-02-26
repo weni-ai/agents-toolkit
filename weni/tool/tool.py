@@ -47,16 +47,14 @@ class Tool:
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        # Se a instância herda de Traced, obtém o trace e retorna separadamente
-        traces = None
+        # Always returns traces. If the instance inherits from Traced and the trace is initialized,
+        # retrieves the traces. Otherwise, returns an empty dictionary.
+        traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
             if instance._tracer_initialized:
                 traces = instance._get_trace_summary()
 
-        if traces is not None:
-            return result, format, events, traces
-        
-        return result, format, events
+        return result, format, events, traces
 
     def execute(self, context: Context) -> ResponseObject:
         """

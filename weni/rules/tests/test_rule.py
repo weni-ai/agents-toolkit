@@ -28,7 +28,7 @@ def test_rule_implementation():
     class TestRule(Rule):
         template = "This is a template with {variable}"
         
-        def execute(self, data: ProcessedData) -> bool:
+        def _execute_impl(self, data: ProcessedData) -> bool:
             # Simple rule that checks if a key exists in the data
             if "test_key" not in data.data:
                 return False
@@ -45,11 +45,15 @@ def test_rule_implementation():
     
     # Test execute method with data that should pass
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
-    assert rule.execute(processed_data) is True
+    result, traces = rule.execute(processed_data)
+    assert result is True
+    assert traces == {}
     
     # Test execute method with data that should fail
     processed_data = ProcessedData("test-urn", {"other_key": "value"})
-    assert rule.execute(processed_data) is False
+    result, traces = rule.execute(processed_data)
+    assert result is False
+    assert traces == {}
     
     # Test get_template_variables method
     test_data = {"value": "test_value"}
@@ -145,7 +149,7 @@ def test_rule_with_traced_false_result():
 
 
 def test_rule_with_traced_no_trace_decorator():
-    """Test that Rule with Traced but no @trace() decorator returns only bool"""
+    """Test that Rule with Traced but no @trace() decorator returns tuple with empty traces"""
     
     class TracedRuleWithoutTrace(Traced, Rule):
         template = "Test template"
@@ -160,10 +164,14 @@ def test_rule_with_traced_no_trace_decorator():
     rule = TracedRuleWithoutTrace()
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
     
-    # Execute should return only bool when no @trace() methods are called
+    # Execute should always return tuple (result, traces)
     result = rule.execute(processed_data)
     
-    # Should return only bool, not a tuple
-    assert not isinstance(result, tuple)
-    assert isinstance(result, bool)
-    assert result is True
+    # Should return tuple (bool, traces) even when no @trace() methods are called
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    bool_result, traces = result
+    assert isinstance(bool_result, bool)
+    assert bool_result is True
+    # Traces should be empty dict when no @trace() decorator is used
+    assert traces == {}
