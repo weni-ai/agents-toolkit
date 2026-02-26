@@ -28,7 +28,7 @@ def test_rule_implementation():
     class TestRule(Rule):
         template = "This is a template with {variable}"
         
-        def _execute_impl(self, data: ProcessedData) -> bool:
+        def execute(self, data: ProcessedData) -> bool:
             # Simple rule that checks if a key exists in the data
             if "test_key" not in data.data:
                 return False
@@ -43,16 +43,20 @@ def test_rule_implementation():
     # Test the template attribute
     assert rule.template == "This is a template with {variable}"
     
-    # Test execute method with data that should pass
+    # Test execute method with data that should pass - returns only bool
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
-    result, traces = rule.execute(processed_data)
+    result = rule.execute(processed_data)
     assert result is True
-    assert traces == {}
     
-    # Test execute method with data that should fail
+    # Test execute method with data that should fail - returns only bool
     processed_data = ProcessedData("test-urn", {"other_key": "value"})
-    result, traces = rule.execute(processed_data)
+    result = rule.execute(processed_data)
     assert result is False
+    
+    # Test using Rule(data) directly - returns (bool, traces)
+    processed_data = ProcessedData("test-urn", {"test_key": "value"})
+    result, traces = TestRule(processed_data)
+    assert result is True
     assert traces == {}
     
     # Test get_template_variables method
@@ -72,10 +76,9 @@ def test_rule_with_traced_returns_tuple():
     class TracedRule(Traced, Rule):
         template = "Test template"
         
-        def _execute_impl(self, data: ProcessedData) -> bool:
+        def execute(self, data: ProcessedData) -> bool:
             # Call a traced method to initialize the tracer
-            validated = self._validate_data(data)
-            return validated
+            return self._validate_data(data)
         
         @trace()
         def _validate_data(self, data: ProcessedData) -> bool:
@@ -85,11 +88,10 @@ def test_rule_with_traced_returns_tuple():
         def get_template_variables(self, data: Any) -> Dict:
             return {"variable": data.get("value", "")}
     
-    rule = TracedRule()
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
     
-    # Execute should return tuple when Traced is used and @trace() methods are called
-    result = rule.execute(processed_data)
+    # Using Rule(data) directly - should return tuple (bool, traces)
+    result = TracedRule(processed_data)
     
     # Should return tuple (bool, traces)
     assert isinstance(result, tuple)
@@ -115,7 +117,7 @@ def test_rule_with_traced_false_result():
     class TracedRule(Traced, Rule):
         template = "Test template"
         
-        def _execute_impl(self, data: ProcessedData) -> bool:
+        def execute(self, data: ProcessedData) -> bool:
             # Call a traced method to initialize the tracer
             return self._check_data(data)
         
@@ -126,11 +128,10 @@ def test_rule_with_traced_false_result():
         def get_template_variables(self, data: Any) -> Dict:
             return {}
     
-    rule = TracedRule()
     processed_data = ProcessedData("test-urn", {})
     
-    # Execute should return tuple when Traced is used and @trace() methods are called
-    result = rule.execute(processed_data)
+    # Using Rule(data) directly - should return tuple (bool, traces)
+    result = TracedRule(processed_data)
     
     # Should return tuple (bool, traces)
     assert isinstance(result, tuple)
@@ -154,18 +155,17 @@ def test_rule_with_traced_no_trace_decorator():
     class TracedRuleWithoutTrace(Traced, Rule):
         template = "Test template"
         
-        def _execute_impl(self, data: ProcessedData) -> bool:
+        def execute(self, data: ProcessedData) -> bool:
             # No @trace() decorator on any method
             return "test_key" in data.data
         
         def get_template_variables(self, data: Any) -> Dict:
             return {}
     
-    rule = TracedRuleWithoutTrace()
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
     
-    # Execute should always return tuple (result, traces)
-    result = rule.execute(processed_data)
+    # Using Rule(data) directly - should return tuple (bool, traces)
+    result = TracedRuleWithoutTrace(processed_data)
     
     # Should return tuple (bool, traces) even when no @trace() methods are called
     assert isinstance(result, tuple)
