@@ -36,7 +36,7 @@ class MyTool(Traced, Tool):
         return {"result": "success", "value": 42}
 ```
 
-When executed, the Tool will return `(result, format, events, traces)` if tracing is enabled.
+When executed, the Tool will always return `(result, format, events, traces)`. If tracing is enabled (Traced is used and @trace() decorator is called), traces will contain execution data. Otherwise, traces will be an empty dictionary.
 
 ### With PreProcessor
 
@@ -61,7 +61,7 @@ class MyPreProcessor(Traced, PreProcessor):
         return context.payload
 ```
 
-When executed, the PreProcessor will return `(ProcessedData, traces)` if tracing is enabled.
+When executed, the PreProcessor will always return `(ProcessedData, traces)`. If tracing is enabled (Traced is used and @trace() decorator is called), traces will contain execution data. Otherwise, traces will be an empty dictionary.
 
 ## `@trace()` Decorator Options
 

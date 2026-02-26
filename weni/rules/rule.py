@@ -1,35 +1,27 @@
 from weni.preprocessor.preprocessor import ProcessedData
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 class Rule:
     """
     Base class for implementing rules.
     
-    Note: When using Traced, the execute() method will automatically return
-    a tuple (result, traces) instead of just the result. Code should handle both cases.
+    The execute() method always returns a tuple (result, traces).
+    If Traced is used and tracing is enabled, traces will contain execution trace data.
+    Otherwise, traces will be an empty dictionary.
     """
     template: str = ""
     
-    def execute(self, data: ProcessedData) -> Union[bool, tuple[bool, Dict[str, Any]]]:
+    def execute(self, data: ProcessedData) -> tuple[bool, Dict[str, Any]]:
         """
         Execute the rule's main functionality.
         
         Subclasses should override this method to implement their rule logic.
         
         Returns:
-            bool: The result of the rule execution (True/False) when not using Traced
-            tuple[bool, Dict[str, Any]]: If the class inherits from Traced and tracing is enabled,
-                                        returns a tuple of (result, traces)
-        
-        Note:
-            When using Traced, the return type changes to a tuple. Code should handle both cases:
-            ```python
-            result = rule.execute(data)
-            if isinstance(result, tuple):
-                bool_result, traces = result
-            else:
-                bool_result = result
-            ```
+            tuple[bool, Dict[str, Any]]: Always returns a tuple of (result, traces).
+                                        If the class inherits from Traced and tracing is enabled,
+                                        traces will contain the execution trace data.
+                                        Otherwise, traces will be an empty dictionary.
         """
         # Chama a implementação da subclasse
         # Se a subclasse sobrescreveu execute(), o Python vai chamar o método da subclasse
@@ -48,9 +40,12 @@ class Rule:
         """
         raise NotImplementedError("Subclasses must implement the execute method")
     
-    def _wrap_execute_result(self, result: bool) -> Union[bool, tuple[bool, Dict[str, Any]]]:
+    def _wrap_execute_result(self, result: bool) -> tuple[bool, Dict[str, Any]]:
         """
-        Wraps the execute result with trace information if Traced is used.
+        Wraps the execute result with trace information.
+        
+        Always returns a tuple (result, traces). If Traced is used and tracing is enabled,
+        traces will contain the execution trace data. Otherwise, traces will be an empty dictionary.
         
         Subclasses that override execute() directly should call this method to ensure
         trace support works correctly:
@@ -61,13 +56,14 @@ class Rule:
             return self._wrap_execute_result(result)
         ```
         """
-        # Se a instância herda de Traced e o trace está inicializado, retorna tupla com traces
+        # If the instance inherits from Traced and the trace is initialized, it obtains the traces.
         if hasattr(self, '_get_trace_summary') and hasattr(self, '_tracer_initialized'):
             if self._tracer_initialized:
                 traces = self._get_trace_summary()
                 return result, traces
         
-        return result
+        # Otherwise, it returns an empty dictionary.
+        return result, {}
     
     def get_template_variables(self, data: Any) -> Dict:
         """
