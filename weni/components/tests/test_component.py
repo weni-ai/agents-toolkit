@@ -11,6 +11,7 @@ from weni.components import (
     Location,
     OrderDetails,
     Attachments,
+    FinalResponse,
 )
 
 
@@ -130,3 +131,63 @@ def test_order_details_component_format_example():
     assert "payment_settings" in result["order_details"]
     assert "total_amount" in result["order_details"]
     assert "order" in result["order_details"]
+
+
+class TestFinalResponse:
+    def test_default_values(self):
+        response = FinalResponse()
+        assert response.is_final_response is True
+        assert response.broadcasts == []
+
+    def test_with_broadcasts(self):
+        broadcasts = [
+            {"msg": {"text": "Hello"}, "urns": ["whatsapp:5511999999999"]},
+            {"msg": {"text": "World"}, "urns": ["whatsapp:5511888888888"]},
+        ]
+        response = FinalResponse(is_final_response=True, broadcasts=broadcasts)
+
+        assert response.is_final_response is True
+        assert response.broadcasts == broadcasts
+
+    def test_broadcasts_are_deep_copied(self):
+        original = [{"msg": {"text": "Hello"}}]
+        response = FinalResponse(broadcasts=original)
+
+        original[0]["msg"]["text"] = "Modified"
+        assert response.broadcasts[0]["msg"]["text"] == "Hello"
+
+    def test_broadcasts_property_returns_copy(self):
+        response = FinalResponse(broadcasts=[{"msg": {"text": "Hello"}}])
+
+        first_call = response.broadcasts
+        first_call.append({"msg": {"text": "Injected"}})
+        assert len(response.broadcasts) == 1
+
+    def test_to_dict(self):
+        broadcasts = [{"msg": {"text": "Hello"}, "urns": ["whatsapp:5511999999999"]}]
+        response = FinalResponse(is_final_response=True, broadcasts=broadcasts)
+
+        result = response.to_dict()
+
+        assert result == {
+            "is_final_output": True,
+            "messages": broadcasts,
+        }
+
+    def test_to_dict_empty_broadcasts(self):
+        response = FinalResponse(is_final_response=True)
+        result = response.to_dict()
+
+        assert result == {
+            "is_final_output": True,
+            "messages": [],
+        }
+
+    def test_is_final_response_false(self):
+        response = FinalResponse(is_final_response=False)
+        assert response.is_final_response is False
+        assert response.to_dict()["is_final_output"] is False
+
+    def test_is_not_a_component_subclass(self):
+        """FinalResponse carries runtime data, not class-level format descriptors."""
+        assert not issubclass(FinalResponse, Component)
