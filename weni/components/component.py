@@ -1,5 +1,7 @@
 from typing import final, Any, ClassVar
 
+from copy import deepcopy
+
 
 class Component:
     """
@@ -108,3 +110,56 @@ class OrderDetails(Component):
             },
         },
     }
+
+
+class FinalResponse:
+    """
+    Signals the end of tool execution and carries broadcast context to Nexus.
+
+    Unlike regular Components (which are class-level format descriptors),
+    FinalResponse holds runtime data about what happened during tool execution,
+    specifically which broadcasts were dispatched to SQS.
+
+    This gives Nexus full visibility into the broadcasts that were fired
+    during the tool, without Nexus needing to query SQS or Flows.
+
+    Example:
+        ```python
+        from weni.broadcasts import Broadcast, Text
+        from weni.components import FinalResponse
+
+        class MyTool(Tool):
+            def execute(self, context: Context):
+                Broadcast.configure(context)
+                Broadcast.send(Text(text="Processing your request..."))
+                result = do_work()
+
+                return FinalResponse(
+                    is_final_response=True,
+                    broadcasts=Broadcast.get_broadcasts(),
+                )
+        ```
+    """
+
+    def __init__(
+        self,
+        is_final_response: bool = True,
+        broadcasts: list[dict[str, Any]] | None = None,
+    ):
+        self._is_final_response = is_final_response
+        self._broadcasts = deepcopy(broadcasts) if broadcasts else []
+
+    @property
+    def is_final_response(self) -> bool:
+        return self._is_final_response
+
+    @property
+    def broadcasts(self) -> list[dict[str, Any]]:
+        return self._broadcasts.copy()
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a dict for transmission to Nexus."""
+        return {
+            "is_final_output": self._is_final_response,
+            "messages": self._broadcasts,
+        }

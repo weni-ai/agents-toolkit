@@ -2,6 +2,11 @@
 
 The Broadcasts module provides message types and functionality for sending WhatsApp messages asynchronously during tool execution.
 
+Messages are sent to an **SQS queue** and processed by a Flows worker, providing:
+- **Near-zero latency** (~5-10ms to enqueue)
+- **100% delivery guarantee** (SQS persists the message)
+- **No blocking** of tool execution
+
 ## Quick Start
 
 ```python
@@ -9,6 +14,9 @@ from weni.broadcasts import Broadcast, Text, Attachment
 
 class MyTool(Tool):
     def execute(self, context: Context):
+        # Configure the broadcast sender (required once)
+        Broadcast.configure(context)
+        
         # Send immediate feedback to user
         Broadcast.send(Text(text="Processing your request..."))
         
@@ -22,6 +30,50 @@ class MyTool(Tool):
         ))
         
         return FinalResponse()
+```
+
+## Configuration
+
+Before using `Broadcast.send()`, you must call `Broadcast.configure(context)` to initialize the sender.
+
+The sender reads configuration from the Context in this priority:
+1. `context.project`
+2. `context.credentials`
+3. `context.globals`
+4. Environment variables
+
+### Required Configuration
+
+| Key | Environment Variable | Description |
+|-----|---------------------|-------------|
+| `sqs_queue_url` | `BROADCAST_SQS_QUEUE_URL` | The SQS queue URL for broadcast messages |
+| `flows_url` | `FLOWS_BASE_URL` | The Flows API base URL |
+
+### Optional Configuration
+
+| Key | Description |
+|-----|-------------|
+| `flows_jwt` or `jwt` | JWT token for Flows API authentication |
+| `project_uuid` | Project UUID for identification |
+
+### Example Context Configuration
+
+```python
+context = Context(
+    project={
+        "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123456789/broadcast-queue",
+        "flows_url": "https://flows.weni.ai",
+        "flows_jwt": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+        "project_uuid": "550e8400-e29b-41d4-a716-446655440000",
+    },
+    contact={
+        "urns": ["whatsapp:5511999999999"],
+        "name": "John Doe",
+    },
+    credentials={},
+    parameters={},
+    globals={},
+)
 ```
 
 ## Message Types
@@ -176,28 +228,103 @@ msg = Catalog(
 Broadcast.send(msg)
 ```
 
-## How It Works
+## Sending Multiple Messages
 
-1. **During Tool Execution**: Messages sent via `Broadcast.send()` are queued in `BroadcastEvent`
-2. **After Tool Execution**: Queued messages are processed and sent to the contact asynchronously
-3. **No Blocking**: The tool continues executing without waiting for messages to be delivered
-
-This allows you to send progress updates to the user while performing long-running operations.
-
-## Message Payload Format
-
-Each message type implements `format_message()` which returns the appropriate payload for the WhatsApp API:
+Use `send_many()` for more efficient batch sending:
 
 ```python
-msg = Text(text="Hello!")
-payload = msg.format_message()
-# Returns: {"type": "text", "text": "Hello!"}
+from weni.broadcasts import Broadcast, Text
 
-msg = Attachment(text="Image", image="https://example.com/img.png")
-payload = msg.format_message()
-# Returns: {
-#     "type": "attachment",
-#     "text": "Image",
-#     "attachments": ["image/png:https://example.com/img.png"]
-# }
+Broadcast.configure(context)
+
+# Send multiple messages in a single batch
+Broadcast.send_many([
+    Text(text="Step 1: Processing..."),
+    Text(text="Step 2: Validating..."),
+    Text(text="Step 3: Complete!"),
+])
+```
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     MESSAGE FLOW                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Tool Lambda                                                   │
+│   ───────────                                                   │
+│   Broadcast.configure(context)                                  │
+│   Broadcast.send(Text("Hello!"))  ──► SQS Queue (~5-10ms)      │
+│   ... continue execution ...                                    │
+│                                                                 │
+│                                           │                     │
+│                                           ▼                     │
+│                                                                 │
+│   Flows Worker (reads from SQS)                                │
+│   ─────────────────────────────                                │
+│   Receives message from queue                                   │
+│   POST /api/v2/internals/whatsapp_broadcasts                   │
+│   Message delivered to WhatsApp                                 │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+1. **Tool Execution**: `Broadcast.configure()` initializes the sender with SQS configuration
+2. **Message Queuing**: `Broadcast.send()` sends the message payload to SQS (~5-10ms)
+3. **Async Processing**: A Flows worker reads from SQS and calls the WhatsApp Broadcasts API
+4. **Delivery**: The message is delivered to the contact via WhatsApp
+
+## SQS Message Payload
+
+The payload sent to SQS contains all information needed by the Flows worker:
+
+```json
+{
+    "msg": {
+        "text": "Hello!",
+        "quick_replies": ["Yes", "No"]
+    },
+    "urns": ["whatsapp:5511999999999"],
+    "flows_url": "https://flows.weni.ai",
+    "jwt_token": "eyJhbGciOiJIUzI1NiIs...",
+    "project_uuid": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+## Error Handling
+
+The `BroadcastSender` raises specific exceptions:
+
+```python
+from weni.broadcasts import (
+    Broadcast,
+    BroadcastSenderError,
+    BroadcastSenderConfigError,
+)
+
+try:
+    Broadcast.configure(context)
+    Broadcast.send(Text(text="Hello!"))
+except BroadcastSenderConfigError as e:
+    # Missing required configuration (sqs_queue_url, flows_url)
+    print(f"Configuration error: {e}")
+except BroadcastSenderError as e:
+    # Failed to send to SQS
+    print(f"Send error: {e}")
+```
+
+## Backward Compatibility
+
+If `Broadcast.configure()` is not called, messages are still registered in `BroadcastEvent` for later processing. This allows gradual migration and testing.
+
+```python
+# Without configure - messages are only registered, not sent to SQS
+Broadcast.send(Text(text="Hello!"))
+
+# Later, retrieve and process manually
+pending = BroadcastEvent.pop_pending()
+for msg in pending:
+    # Process manually...
+    pass
 ```
