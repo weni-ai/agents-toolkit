@@ -1,3 +1,5 @@
+from typing import Any
+from weni.components.component import FinalResponse
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
@@ -56,7 +58,11 @@ class Tool:
             if instance._tracer_initialized:
                 traces = instance._get_trace_summary()
 
-        return result, format, events, traces
+        broadcasts: list[dict[str, Any]] = []
+        if isinstance(result, FinalResponse):
+            broadcasts = result.broadcasts
+
+        return result, format, events, traces, broadcasts
 
     def execute(self, context: Context) -> ResponseObject:
         """
