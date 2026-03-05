@@ -24,23 +24,15 @@ def test_tool_execution():
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data={'test': 'data'})  # type: ignore
 
-<<<<<<< HEAD
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	result, format, events, traces = TestTool(context)
-=======
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events, broadcasts = TestTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = TestTool(context)
 
 	# 'events' and 'traces' are returned separately
 	assert result == {'test': 'data'}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 
 def test_tool_context_access():
@@ -71,11 +63,7 @@ def test_tool_context_access():
 		constants={'INPUT': {'label': 'Example', 'required': True, 'default': 'Sample'}}
 	)
 
-<<<<<<< HEAD
-	result, format, events, traces = TestTool(context)
-=======
-	result, format, events, broadcasts = TestTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = TestTool(context)
 	assert result == {
 		'credential': 'secret123',
 		'param': 'user456',
@@ -94,11 +82,8 @@ def test_tool_context_access():
 			'header': {'type': 'text', 'text': 'Important Message'},
 		}
 	}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 
 def test_tool_without_execute_implementation():
@@ -107,22 +92,14 @@ def test_tool_without_execute_implementation():
 	class EmptyTool(Tool):
 		pass
 
-<<<<<<< HEAD
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	result, format, events, traces = EmptyTool(context)
-=======
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events, broadcasts = EmptyTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = EmptyTool(context)
 
 	assert result == {}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 
 def test_tool_with_invalid_format():
@@ -183,37 +160,24 @@ def test_tool_execution_order():
 			execution_count += 1
 			return TextResponse(data={'count': execution_count})  # type: ignore
 
-<<<<<<< HEAD
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	result, format, events, traces = CountedTool(context)
-=======
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events, broadcasts = CountedTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = CountedTool(context)
 
 	assert execution_count == 1
 	assert result == {'count': 1}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-
-	result, format, events, traces = CountedTool(context)
-=======
 	assert broadcasts == []
 
-	result, format, events, broadcasts = CountedTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = CountedTool(context)
 
 	assert execution_count == 2
 	assert result == {'count': 2}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 
 def test_tool_with_complex_response():
@@ -223,13 +187,8 @@ def test_tool_with_complex_response():
 		def execute(self, context: Context) -> ResponseObject:
 			return QuickReplyResponse(data={'message': 'Choose an option'}, header_type=HeaderType.TEXT, footer=True)  # type: ignore
 
-<<<<<<< HEAD
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	result, format, events, traces = ComplexTool(context)
-=======
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events, broadcasts = ComplexTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = ComplexTool(context)
 
 	assert result == {'message': 'Choose an option'}
 	assert events == []
@@ -241,11 +200,8 @@ def test_tool_with_complex_response():
 			'footer': 'Powered by Weni',
 		}
 	}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 
 def test_tool_with_non_dict_response():
@@ -255,61 +211,42 @@ def test_tool_with_non_dict_response():
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data=['item1', 'item2', 'item3'])  # type: ignore
 
-<<<<<<< HEAD
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	result, format, events, traces = ListDataTool(context)
-=======
-	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events, broadcasts = ListDataTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = ListDataTool(context)
 
 	assert result == ['item1', 'item2', 'item3']
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 	class StringDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data='simple string response')  # type: ignore
 
-<<<<<<< HEAD
-	result, format, events, traces = StringDataTool(context)
-=======
-	result, format, events, broadcasts = StringDataTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = StringDataTool(context)
 
 	assert result == 'simple string response'
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
 
 	class NumberDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data=42)  # type: ignore
 
-<<<<<<< HEAD
-	result, format, events, traces = NumberDataTool(context)
-=======
-	result, format, events, broadcasts = NumberDataTool(context)
->>>>>>> feat/flows-integration-abstraction
+	result, format, events, traces, broadcasts = NumberDataTool(context)
 
 	assert result == 42
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
-<<<<<<< HEAD
 	assert traces == {}
+	assert broadcasts == []
 
 
 def test_tool_with_traced_returns_tuple():
-	"""Test that Tool with Traced returns tuple (result, format, events, traces)"""
+	"""Test that Tool with Traced returns tuple (result, format, events, traces, broadcasts)"""
 	
 	class TracedTool(Traced, Tool):
 		def execute(self, context: Context) -> ResponseObject:
@@ -325,10 +262,10 @@ def test_tool_with_traced_returns_tuple():
 	# Tool with Traced should return tuple with traces
 	result = TracedTool(context)
 	
-	# Should return tuple (result, format, events, traces)
+	# Should return tuple (result, format, events, traces, broadcasts)
 	assert isinstance(result, tuple)
-	assert len(result) == 4
-	data, format, events, traces = result
+	assert len(result) == 5
+	data, format, events, traces, broadcasts = result
 	
 	# Verify data
 	assert data == {"processed": True, "value": 42}
@@ -343,10 +280,11 @@ def test_tool_with_traced_returns_tuple():
 	assert "started_at" in traces
 	assert "status" in traces
 	assert len(traces["steps"]) > 0  # Should have at least one step from _process_data
+	assert broadcasts == []
 
 
-def test_tool_without_traced_returns_four_values():
-	"""Test that Tool without Traced returns (result, format, events, traces) with empty traces"""
+def test_tool_without_traced_returns_five_values():
+	"""Test that Tool without Traced returns (result, format, events, traces, broadcasts) with empty traces"""
 	
 	class RegularTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
@@ -354,19 +292,17 @@ def test_tool_without_traced_returns_four_values():
 	
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	
-	# Tool without Traced should always return (result, format, events, traces)
+	# Tool without Traced should always return (result, format, events, traces, broadcasts)
 	result = RegularTool(context)
 	
-	# Should return tuple with 4 values, including empty traces
+	# Should return tuple with 5 values, including empty traces
 	assert isinstance(result, tuple)
-	assert len(result) == 4
-	data, format, events, traces = result
+	assert len(result) == 5
+	data, format, events, traces, broadcasts = result
 	
 	assert data == {"test": "data"}
 	assert isinstance(format, dict)
 	assert isinstance(events, list)
 	# Traces should be empty dict when Traced is not used
 	assert traces == {}
-=======
 	assert broadcasts == []
->>>>>>> feat/flows-integration-abstraction
