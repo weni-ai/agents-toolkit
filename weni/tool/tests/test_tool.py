@@ -24,12 +24,13 @@ def test_tool_execution():
 			return TextResponse(data={'test': 'data'})  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events = TestTool(context)
+	result, format, events, broadcasts = TestTool(context)
 
 	# 'events' are returned separately
 	assert result == {'test': 'data'}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
 
 def test_tool_context_access():
@@ -58,7 +59,7 @@ def test_tool_context_access():
 		project={'name': 'Project 1', 'uuid': 'project-uuid'},
 	)
 
-	result, format, events = TestTool(context)
+	result, format, events, broadcasts = TestTool(context)
 	assert result == {
 		'credential': 'secret123',
 		'param': 'user456',
@@ -76,6 +77,7 @@ def test_tool_context_access():
 			'header': {'type': 'text', 'text': 'Important Message'},
 		}
 	}
+	assert broadcasts == []
 
 
 def test_tool_without_execute_implementation():
@@ -85,11 +87,12 @@ def test_tool_without_execute_implementation():
 		pass
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events = EmptyTool(context)
+	result, format, events, broadcasts = EmptyTool(context)
 
 	assert result == {}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
 
 def test_tool_with_invalid_format():
@@ -151,19 +154,21 @@ def test_tool_execution_order():
 			return TextResponse(data={'count': execution_count})  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events = CountedTool(context)
+	result, format, events, broadcasts = CountedTool(context)
 
 	assert execution_count == 1
 	assert result == {'count': 1}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
-	result, format, events = CountedTool(context)
+	result, format, events, broadcasts = CountedTool(context)
 
 	assert execution_count == 2
 	assert result == {'count': 2}
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
 
 def test_tool_with_complex_response():
@@ -174,7 +179,7 @@ def test_tool_with_complex_response():
 			return QuickReplyResponse(data={'message': 'Choose an option'}, header_type=HeaderType.TEXT, footer=True)  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events = ComplexTool(context)
+	result, format, events, broadcasts = ComplexTool(context)
 
 	assert result == {'message': 'Choose an option'}
 	assert events == []
@@ -186,6 +191,7 @@ def test_tool_with_complex_response():
 			'footer': 'Powered by Weni',
 		}
 	}
+	assert broadcasts == []
 
 
 def test_tool_with_non_dict_response():
@@ -196,28 +202,31 @@ def test_tool_with_non_dict_response():
 			return TextResponse(data=['item1', 'item2', 'item3'])  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
-	result, format, events = ListDataTool(context)
+	result, format, events, broadcasts = ListDataTool(context)
 
 	assert result == ['item1', 'item2', 'item3']
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
 	class StringDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data='simple string response')  # type: ignore
 
-	result, format, events = StringDataTool(context)
+	result, format, events, broadcasts = StringDataTool(context)
 
 	assert result == 'simple string response'
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
 
 	class NumberDataTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data=42)  # type: ignore
 
-	result, format, events = NumberDataTool(context)
+	result, format, events, broadcasts = NumberDataTool(context)
 
 	assert result == 42
 	assert events == []
 	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert broadcasts == []
