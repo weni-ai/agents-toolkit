@@ -1,3 +1,5 @@
+from typing import Any
+from weni.components.component import FinalResponse
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
@@ -47,7 +49,11 @@ class Tool:
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        return result, format, events
+        broadcasts: list[dict[str, Any]] = []
+        if isinstance(result, FinalResponse):
+            broadcasts = result.broadcasts
+
+        return result, format, events, broadcasts
 
     def execute(self, context: Context) -> ResponseObject:
         """
