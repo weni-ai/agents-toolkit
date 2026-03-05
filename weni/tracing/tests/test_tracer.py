@@ -33,8 +33,7 @@ class TestTracedTool(TracedAgent, Tool):
         result = self._process_data(context)
         response: ResponseObject = TextResponse(data=result)  # type: ignore
         data, format = response
-        # Inject trace into data
-        data = self._inject_trace(data)
+        # Trace is automatically returned separately by Tool.__new__
         return data, format
 
     @trace()
@@ -48,8 +47,7 @@ class TestTracedPreProcessor(TracedAgent, PreProcessor):
     def process(self, context: PreProcessorContext) -> ProcessedData:
         validated = self._validate(context)
         data = {"data": validated}
-        # Inject trace into data
-        data = self._inject_trace(data)
+        # Trace is automatically returned separately by PreProcessor.__new__
         return ProcessedData("test-urn", data)
 
     @trace()
@@ -183,10 +181,10 @@ def test_traced_agent_auto_init():
 
 
 def test_traced_agent_custom_name():
-    """Test custom agent name."""
+    """Test custom name."""
 
     class TestTool(TracedAgent, Tool):
-        AGENT_NAME = "CustomAgentName"
+        NAME = "CustomName"
 
         @trace()
         def _test_method(self):
@@ -195,11 +193,11 @@ def test_traced_agent_custom_name():
     tool = object.__new__(TestTool)
     tool._auto_init_tracer()
 
-    assert tool._execution_trace.agent_name == "CustomAgentName"
+    assert tool._execution_trace.name == "CustomName"
 
 
 def test_traced_agent_default_name():
-    """Test default agent name (class name)."""
+    """Test default name (class name)."""
 
     class MyCustomTool(TracedAgent, Tool):
         @trace()
@@ -209,7 +207,7 @@ def test_traced_agent_default_name():
     tool = object.__new__(MyCustomTool)
     tool._auto_init_tracer()
 
-    assert tool._execution_trace.agent_name == "MyCustomTool"
+    assert tool._execution_trace.name == "MyCustomTool"
 
 
 def test_get_trace_summary():
@@ -232,7 +230,7 @@ def test_get_trace_summary():
 
     summary = tool._get_trace_summary()
 
-    assert "agent_name" in summary
+    assert "name" in summary
     assert "started_at" in summary
     assert "completed_at" in summary
     assert "total_duration_ms" in summary
@@ -258,7 +256,7 @@ def test_inject_trace():
     result = tool._inject_trace(data)
 
     assert "_execution_trace" in result
-    assert result["_execution_trace"]["agent_name"] == "TestTool"
+    assert result["_execution_trace"]["name"] == "TestTool"
 
 
 def test_inject_trace_not_dict():
@@ -312,16 +310,20 @@ def test_traced_tool_integration():
         constants={},
     )
 
-    # Note: Tool.__new__ intercepts, so we bypass it using object.__new__
-    tool = object.__new__(TestTracedTool)
-    tool._auto_init_tracer()
+    # Use Tool.__new__ to test the actual integration with trace return
+    result = TestTracedTool(context)
+    
+    # Tool with Traced returns (result, format, events, traces)
+    assert len(result) == 4
+    data, format, events, traces = result
 
-    result = tool.execute(context)
-    data, format = result
-
-    # Trace should be injected
-    assert "_execution_trace" in data
+    # Trace should be returned separately, not injected in data
+    assert "_execution_trace" not in data
     assert data["processed"] is True
+    assert isinstance(traces, dict)
+    assert "name" in traces
+    assert traces["name"] == "TestTracedTool"
+    assert "steps" in traces
 
 
 def test_traced_preprocessor_integration():
@@ -334,15 +336,21 @@ def test_traced_preprocessor_integration():
         project={},
     )
 
-    # Note: PreProcessor.__new__ intercepts, so we bypass it using object.__new__
-    processor = object.__new__(TestTracedPreProcessor)
-    processor._auto_init_tracer()
+    # Use PreProcessor.__new__ to test the actual integration with trace return
+    result = TestTracedPreProcessor(context)
 
-    result = processor.process(context)
+    # PreProcessor with Traced returns (ProcessedData, traces)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    processed_data, traces = result
 
-    # Trace should be injected into data
-    assert "_execution_trace" in result.data
-    assert result.data["data"] == {"test": "data"}
+    # Trace should be returned separately, not injected in data
+    assert "_execution_trace" not in processed_data.data
+    assert processed_data.data["data"] == {"test": "data"}
+    assert isinstance(traces, dict)
+    assert "name" in traces
+    assert traces["name"] == "TestTracedPreProcessor"
+    assert "steps" in traces
 
 
 def test_backwards_compatibility_aliases():
@@ -710,7 +718,7 @@ def test_execution_step_defaults():
 def test_execution_trace_defaults():
     """Test ExecutionTrace with default values."""
     trace = ExecutionTrace()
-    assert trace.agent_name == ""
+    assert trace.name == ""
     assert trace.started_at == ""
     assert trace.status == "pending"
     assert trace.steps == []
@@ -1018,14 +1026,14 @@ def test_execution_trace_with_all_fields():
     from weni.tracing import ExecutionTrace, ExecutionStep, StepStatus
 
     trace = ExecutionTrace(
-        agent_name="TestAgent",
+        name="TestAgent",
         started_at="2024-01-01T00:00:00Z",
         status="completed",
         steps=[ExecutionStep("Test", "method", StepStatus.COMPLETED)],
         error_summary="Test error",
     )
 
-    assert trace.agent_name == "TestAgent"
+    assert trace.name == "TestAgent"
     assert trace.started_at == "2024-01-01T00:00:00Z"
     assert trace.status == "completed"
     assert len(trace.steps) == 1
