@@ -49,6 +49,10 @@ class BroadcastSender:
         - Flows URL: `flows_url` or `FLOWS_BASE_URL` env var
         - JWT Token: `flows_jwt` or `jwt` in context
 
+    Optional configuration:
+        - Channel UUID: `channel_uuid` or `BROADCAST_CHANNEL_UUID` env var
+          (for orgs with multiple WhatsApp channels)
+
     Example:
         ```python
         from weni.broadcasts import BroadcastSender, Text
@@ -79,6 +83,7 @@ class BroadcastSender:
         self.flows_url: str = flows_url
         self.jwt_token = self._get_jwt_token()
         self.project_uuid = self._get_config("project_uuid", "PROJECT_UUID", required=False)
+        self.channel_uuid = self._get_config("channel_uuid", "BROADCAST_CHANNEL_UUID", required=False)
 
         self.is_fifo = self.queue_url.endswith(".fifo")
 
@@ -203,6 +208,10 @@ class BroadcastSender:
         # Add project UUID if available
         if self.project_uuid:
             payload["project_uuid"] = self.project_uuid
+
+        # Add channel UUID if available (for orgs with multiple WhatsApp channels)
+        if self.channel_uuid:
+            payload["channel"] = self.channel_uuid
 
         return payload
 
