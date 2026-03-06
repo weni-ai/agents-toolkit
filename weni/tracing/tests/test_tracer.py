@@ -313,9 +313,9 @@ def test_traced_tool_integration():
     # Use Tool.__new__ to test the actual integration with trace return
     result = TestTracedTool(context)
     
-    # Tool with Traced returns (result, format, events, traces)
-    assert len(result) == 4
-    data, format, events, traces = result
+    # Tool with Traced returns (result, format, events, traces, broadcasts)
+    assert len(result) == 5
+    data, format, events, traces, broadcasts = result
 
     # Trace should be returned separately, not injected in data
     assert "_execution_trace" not in data
@@ -324,6 +324,7 @@ def test_traced_tool_integration():
     assert "name" in traces
     assert traces["name"] == "TestTracedTool"
     assert "steps" in traces
+    assert broadcasts == []
 
 
 def test_traced_preprocessor_integration():
