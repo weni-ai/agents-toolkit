@@ -43,15 +43,24 @@ class Tool:
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        result, format = instance.execute(context)
+        # Ensure we only return events from this execution
+        Event.registry.clear()
+        execute_result = instance.execute(context)
         events = Event.get_events()
 
-        if not isinstance(format, dict):
-            raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
-
         broadcasts: list[dict[str, Any]] = []
-        if isinstance(result, FinalResponse):
-            broadcasts = result.broadcasts
+
+        if isinstance(execute_result, FinalResponse):
+            broadcasts = execute_result.broadcasts
+            result = execute_result.to_dict()
+            format: dict[str, Any] = {}
+        else:
+            result, format = execute_result
+            if not isinstance(format, dict):
+                raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
+            if isinstance(result, FinalResponse):
+                broadcasts = result.broadcasts
+                result = result.to_dict()
 
         return result, format, events, broadcasts
 
