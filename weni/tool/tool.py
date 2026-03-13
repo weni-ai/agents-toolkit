@@ -1,4 +1,6 @@
 from typing import Any
+
+from weni.broadcasts.broadcast import Broadcast
 from weni.components.component import FinalResponse
 from weni.context import Context
 from weni.events.event import Event
@@ -45,6 +47,12 @@ class Tool:
         instance = super().__new__(cls)
         # Ensure we only return events from this execution
         Event.registry.clear()
+
+        try:
+            Broadcast.configure(context)
+        except Exception:
+            pass
+
         execute_result = instance.execute(context)
         events = Event.get_events()
 

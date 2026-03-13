@@ -144,19 +144,16 @@ class Broadcast:
     - No blocking of tool execution
 
     Setup:
-        Before using Broadcast.send(), you must initialize the sender
-        with Broadcast.configure(context). This is typically done once
-        at the start of tool execution.
+        The sender is automatically configured by Tool.__new__() using
+        the execution context. No manual setup is needed.
 
     Example:
         ```python
         from weni.broadcasts import Broadcast, Text, Attachment
+        from weni.components import FinalResponse
 
         class MyTool(Tool):
             def execute(self, context: Context):
-                # Configure the broadcast sender
-                Broadcast.configure(context)
-
                 # Send immediate feedback to user
                 Broadcast.send(Text(text="Processing your request..."))
 
@@ -169,7 +166,9 @@ class Broadcast:
                     image=result["image_url"]
                 ))
 
-                return FinalResponse()
+                return FinalResponse(
+                    broadcasts=Broadcast.get_broadcasts(),
+                )
         ```
     """
 
