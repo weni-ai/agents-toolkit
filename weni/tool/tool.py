@@ -56,10 +56,10 @@ class Tool:
         execute_result = instance.execute(context)
         events = Event.get_events()
 
-        broadcasts: list[dict[str, Any]] = []
+        from weni.components.component import Component
+        broadcasts = Component.get_messages()
 
         if isinstance(execute_result, FinalResponse):
-            broadcasts = execute_result.broadcasts
             result = execute_result.to_dict()
             format: dict[str, Any] = {}
         else:
@@ -67,7 +67,6 @@ class Tool:
             if not isinstance(format, dict):
                 raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
             if isinstance(result, FinalResponse):
-                broadcasts = result.broadcasts
                 result = result.to_dict()
 
         # Always returns traces. If the instance inherits from Traced and the trace is initialized,

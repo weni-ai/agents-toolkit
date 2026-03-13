@@ -133,61 +133,55 @@ def test_order_details_component_format_example():
     assert "order" in result["order_details"]
 
 
+class TestComponentGetMessages:
+    def test_get_messages_returns_broadcasts(self):
+        from weni.broadcasts.broadcast import BroadcastEvent
+
+        BroadcastEvent.clear()
+        BroadcastEvent._get_messages().append({"text": "Hello"})
+        BroadcastEvent._get_messages().append({"text": "World"})
+
+        messages = Component.get_messages()
+        assert messages == [{"text": "Hello"}, {"text": "World"}]
+
+        BroadcastEvent.clear()
+
+    def test_get_messages_empty(self):
+        from weni.broadcasts.broadcast import BroadcastEvent
+
+        BroadcastEvent.clear()
+        assert Component.get_messages() == []
+
+
 class TestFinalResponse:
-    def test_default_values(self):
+    def test_default_no_broadcasts(self):
+        from weni.broadcasts.broadcast import BroadcastEvent
+
+        BroadcastEvent.clear()
         response = FinalResponse()
-        assert response.is_final_response is True
         assert response.broadcasts == []
 
-    def test_with_broadcasts(self):
-        broadcasts = [
-            {"msg": {"text": "Hello"}, "urns": ["whatsapp:5511999999999"]},
-            {"msg": {"text": "World"}, "urns": ["whatsapp:5511888888888"]},
-        ]
-        response = FinalResponse(is_final_response=True, broadcasts=broadcasts)
+    def test_to_dict_always_final(self):
+        from weni.broadcasts.broadcast import BroadcastEvent
 
-        assert response.is_final_response is True
-        assert response.broadcasts == broadcasts
+        BroadcastEvent.clear()
+        result = FinalResponse().to_dict()
+        assert result == {"is_final_output": True, "messages": []}
 
-    def test_broadcasts_are_deep_copied(self):
-        original = [{"msg": {"text": "Hello"}}]
-        response = FinalResponse(broadcasts=original)
+    def test_broadcasts_from_component_get_messages(self):
+        from weni.broadcasts.broadcast import BroadcastEvent
 
-        original[0]["msg"]["text"] = "Modified"
-        assert response.broadcasts[0]["msg"]["text"] == "Hello"
+        BroadcastEvent.clear()
+        BroadcastEvent._get_messages().append({"text": "auto-collected"})
 
-    def test_broadcasts_property_returns_copy(self):
-        response = FinalResponse(broadcasts=[{"msg": {"text": "Hello"}}])
-
-        first_call = response.broadcasts
-        first_call.append({"msg": {"text": "Injected"}})
-        assert len(response.broadcasts) == 1
-
-    def test_to_dict(self):
-        broadcasts = [{"msg": {"text": "Hello"}, "urns": ["whatsapp:5511999999999"]}]
-        response = FinalResponse(is_final_response=True, broadcasts=broadcasts)
-
-        result = response.to_dict()
-
-        assert result == {
+        response = FinalResponse()
+        assert response.broadcasts == [{"text": "auto-collected"}]
+        assert response.to_dict() == {
             "is_final_output": True,
-            "messages": broadcasts,
+            "messages": [{"text": "auto-collected"}],
         }
 
-    def test_to_dict_empty_broadcasts(self):
-        response = FinalResponse(is_final_response=True)
-        result = response.to_dict()
-
-        assert result == {
-            "is_final_output": True,
-            "messages": [],
-        }
-
-    def test_is_final_response_false(self):
-        response = FinalResponse(is_final_response=False)
-        assert response.is_final_response is False
-        assert response.to_dict()["is_final_output"] is False
+        BroadcastEvent.clear()
 
     def test_is_not_a_component_subclass(self):
-        """FinalResponse carries runtime data, not class-level format descriptors."""
         assert not issubclass(FinalResponse, Component)
