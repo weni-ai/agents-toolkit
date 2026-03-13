@@ -21,11 +21,12 @@ def create_context(
     credentials: dict | None = None,
     globals: dict | None = None,
     contact: dict | None = None,
+    parameters: dict | None = None,
 ) -> Context:
     """Helper to create a Context for testing."""
     return Context(
         credentials=credentials or {},
-        parameters={},
+        parameters=parameters or {},
         globals=globals or {},
         contact=contact or {},
         project=project or {},
@@ -211,8 +212,39 @@ class TestBroadcastSenderContactUrn:
 
         assert sender._get_contact_urn() is None
 
-    def test_get_contact_urn_no_contact(self):
-        """Test with no contact info."""
+    def test_get_contact_urn_from_parameters_fallback(self):
+        """Test extracting URN from parameters when contact is empty."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            },
+            parameters={"contact_urn": "whatsapp:5584988242399"},
+        )
+
+        mock_sqs = MagicMock()
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+
+        assert sender._get_contact_urn() == "whatsapp:5584988242399"
+
+    def test_get_contact_urn_contact_takes_priority_over_parameters(self):
+        """Test that contact.urns takes priority over parameters.contact_urn."""
+        context = create_context(
+            project={
+                "sqs_queue_url": "https://sqs/queue",
+                "flows_url": "https://flows.weni.ai",
+            },
+            contact={"urns": ["whatsapp:5511999999999"]},
+            parameters={"contact_urn": "whatsapp:5584988242399"},
+        )
+
+        mock_sqs = MagicMock()
+        sender = BroadcastSender(context, sqs_client=mock_sqs)
+
+        assert sender._get_contact_urn() == "whatsapp:5511999999999"
+
+    def test_get_contact_urn_no_contact_no_parameters(self):
+        """Test with no contact info and no parameters."""
         context = create_context(
             project={
                 "sqs_queue_url": "https://sqs/queue",

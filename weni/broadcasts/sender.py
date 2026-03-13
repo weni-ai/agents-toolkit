@@ -139,13 +139,18 @@ class BroadcastSender:
         """
         Get the contact URN from context.
 
+        Priority: contact.urns > contact.urn > parameters.contact_urn
+
+        The last fallback allows passing the URN via test parameters
+        when context.contact is not populated (e.g., weni-cli tests).
+
         Returns:
             The contact URN or None if not available.
         """
         urns = self.context.contact.get("urns")
         if urns and isinstance(urns, (list, tuple)) and len(urns) > 0:
             return urns[0]
-        return self.context.contact.get("urn")
+        return self.context.contact.get("urn") or self.context.parameters.get("contact_urn")
 
     @property
     def sqs_client(self):
