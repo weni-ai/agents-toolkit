@@ -1,7 +1,5 @@
 from typing import final, Any, ClassVar
 
-from copy import deepcopy
-
 
 class Component:
     """
@@ -10,6 +8,10 @@ class Component:
     Components define the structure and rules for different types of elements
     that can be used to display tool responses. Component attributes are
     immutable class variables.
+
+    Also provides broadcast message collection via get_messages(), which
+    returns all broadcasts dispatched during the current tool execution.
+    This allows any component to carry broadcast context to Nexus.
 
     Class Attributes:
         _format_example (ClassVar[dict]): Expected JSON format for the component
@@ -29,6 +31,21 @@ class Component:
     def get_format_example(cls) -> dict[str, Any]:
         """Get the format example for the component."""
         return cls._format_example
+
+    @staticmethod
+    def get_messages() -> list[dict[str, Any]]:
+        """
+        Get all broadcast messages dispatched during this tool execution.
+
+        Collects messages registered via Broadcast.send() and returns them
+        so they can be included in the response to Nexus.
+
+        Returns:
+            List of broadcast message payloads.
+        """
+        from weni.broadcasts.broadcast import Broadcast
+
+        return Broadcast.get_broadcasts()
 
 
 class Text(Component):
@@ -114,14 +131,9 @@ class OrderDetails(Component):
 
 class FinalResponse:
     """
-    Signals the end of tool execution and carries broadcast context to Nexus.
+    Signals the end of tool execution.
 
-    Unlike regular Components (which are class-level format descriptors),
-    FinalResponse holds runtime data about what happened during tool execution,
-    specifically which broadcasts were dispatched to SQS.
-
-    This gives Nexus full visibility into the broadcasts that were fired
-    during the tool, without Nexus needing to query SQS or Flows.
+    Broadcast messages are collected automatically from Component.get_messages().
 
     Example:
         ```python
@@ -130,36 +142,20 @@ class FinalResponse:
 
         class MyTool(Tool):
             def execute(self, context: Context):
-                Broadcast.configure(context)
                 Broadcast.send(Text(text="Processing your request..."))
                 result = do_work()
 
-                return FinalResponse(
-                    is_final_response=True,
-                    broadcasts=Broadcast.get_broadcasts(),
-                )
+                return FinalResponse()
         ```
     """
 
-    def __init__(
-        self,
-        is_final_response: bool = True,
-        broadcasts: list[dict[str, Any]] | None = None,
-    ):
-        self._is_final_response = is_final_response
-        self._broadcasts = deepcopy(broadcasts) if broadcasts else []
-
-    @property
-    def is_final_response(self) -> bool:
-        return self._is_final_response
-
     @property
     def broadcasts(self) -> list[dict[str, Any]]:
-        return self._broadcasts.copy()
+        return Component.get_messages()
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a dict for transmission to Nexus."""
         return {
-            "is_final_output": self._is_final_response,
-            "messages": self._broadcasts,
+            "is_final_output": True,
+            "messages": Component.get_messages(),
         }
