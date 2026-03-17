@@ -82,7 +82,7 @@ class BroadcastSender:
         self.queue_url: str = queue_url
         self.flows_url: str = flows_url
         self.jwt_token = self._get_jwt_token()
-        self.project_uuid = self._get_config("project_uuid", "PROJECT_UUID", required=False)
+        self.project_uuid = self._get_config("uuid", "PROJECT_UUID", required=False)
         self.channel_uuid = self._get_config("channel_uuid", "BROADCAST_CHANNEL_UUID", required=False)
 
         self.is_fifo = self.queue_url.endswith(".fifo")
@@ -129,10 +129,7 @@ class BroadcastSender:
             The JWT token or None if not found.
         """
         return (
-            self.context.project.get("flows_jwt")
-            or self.context.credentials.get("flows_jwt")
-            or self.context.project.get("jwt")
-            or self.context.credentials.get("jwt")
+            self.context.project.get("auth_token")
         )
 
     def _get_contact_urn(self) -> str | None:
