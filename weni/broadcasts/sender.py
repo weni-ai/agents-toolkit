@@ -68,6 +68,7 @@ class BroadcastSender:
         value = (
             self.context.project.get(key)
             or self.context.credentials.get(key)
+            or self.context.contact.get(key)
             or self.context.globals.get(key)
             or os.environ.get(env_var)
         )
