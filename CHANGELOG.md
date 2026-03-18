@@ -1,4 +1,9 @@
 # Changelog
+## [2.4.1] - 2026-03-18
+
+- feat: Always return traces in tool, rule and preprocessor execution
+
+# Changelog
 ## [2.4.0] - 2026-02-19
 
 - feat: Add execution trace for agents
