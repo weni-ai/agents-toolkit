@@ -35,7 +35,7 @@ class Rule:
             if instance._tracer_initialized:
                 traces = instance._get_trace_summary()
         
-        return result, traces
+        return instance, result, traces
     
     def execute(self, data: ProcessedData) -> bool:
         """
