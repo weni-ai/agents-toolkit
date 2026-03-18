@@ -2,32 +2,17 @@
 Weni Broadcasts Module
 
 Provides message types and broadcast functionality for sending
-WhatsApp messages asynchronously during tool execution.
-
-Messages are sent to an SQS queue and processed by a Flows worker,
-providing near-zero latency (~5-10ms) with 100% delivery guarantee.
+WhatsApp messages during tool execution via the Flows API.
 
 Example:
     ```python
-    from weni.broadcasts import Broadcast, Text, Attachment
+    from weni.broadcasts import Broadcast, Text
+    from weni.components import FinalResponse
 
     class MyTool(Tool):
         def execute(self, context: Context):
-            # Configure the broadcast sender (required once)
-            Broadcast.configure(context)
-
-            # Send a text message
             Broadcast.send(Text(text="Processing your request..."))
-
-            # Do some work...
-            result = some_api_call()
-
-            # Send an attachment
-            Broadcast.send(Attachment(
-                text="Here's the result",
-                image="https://example.com/image.png"
-            ))
-
+            result = do_work()
             return FinalResponse()
     ```
 """

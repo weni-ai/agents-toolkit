@@ -1,8 +1,7 @@
 """
-Tests for BroadcastSender class.
+Tests for BroadcastSender class (HTTP-based).
 """
 
-import json
 import os
 from unittest.mock import MagicMock, patch
 
@@ -33,619 +32,247 @@ def create_context(
     )
 
 
+def _default_project(**overrides) -> dict:
+    base = {"flows_url": "https://flows.weni.ai", "auth_token": "test-token"}
+    base.update(overrides)
+    return base
+
+
 class TestBroadcastSenderInit:
-    """Tests for BroadcastSender initialization."""
+    def test_init_with_project_config(self):
+        context = create_context(project=_default_project(uuid="proj-123", channel_uuid="ch-456"))
+        sender = BroadcastSender(context)
 
-    def test_init_with_all_config_in_project(self):
-        """Test initialization with all config in project."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
-                "flows_url": "https://flows.weni.ai",
-                "flows_jwt": "jwt-token-123",
-                "project_uuid": "proj-uuid-123",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender.queue_url == "https://sqs.us-east-1.amazonaws.com/123/queue"
         assert sender.flows_url == "https://flows.weni.ai"
-        assert sender.jwt_token == "jwt-token-123"
-        assert sender.project_uuid == "proj-uuid-123"
+        assert sender.auth_token == "test-token"
+        assert sender.project_uuid == "proj-123"
+        assert sender.channel_uuid == "ch-456"
 
-    def test_init_with_config_in_credentials(self):
-        """Test initialization with config in credentials."""
-        context = create_context(
-            credentials={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
-                "flows_url": "https://flows.weni.ai",
-                "flows_jwt": "jwt-token-123",
-            }
-        )
+    def test_init_with_credentials(self):
+        context = create_context(credentials={"flows_url": "https://flows.creds.ai"}, project={"auth_token": "tk"})
+        sender = BroadcastSender(context)
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        assert sender.flows_url == "https://flows.creds.ai"
 
-        assert sender.queue_url == "https://sqs.us-east-1.amazonaws.com/123/queue"
-        assert sender.flows_url == "https://flows.weni.ai"
-        assert sender.jwt_token == "jwt-token-123"
+    def test_init_with_globals(self):
+        context = create_context(globals={"flows_url": "https://flows.globals.ai"}, project={"auth_token": "tk"})
+        sender = BroadcastSender(context)
 
-    def test_init_with_config_in_globals(self):
-        """Test initialization with config in globals."""
-        context = create_context(
-            globals={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
-            credentials={"flows_jwt": "jwt-token-123"},
-        )
+        assert sender.flows_url == "https://flows.globals.ai"
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+    @patch.dict(os.environ, {"FLOWS_BASE_URL": "https://flows.env.ai"})
+    def test_init_with_env_var(self):
+        context = create_context(project={"auth_token": "tk"})
+        sender = BroadcastSender(context)
 
-        assert sender.queue_url == "https://sqs.us-east-1.amazonaws.com/123/queue"
-        assert sender.flows_url == "https://flows.weni.ai"
-
-    @patch.dict(os.environ, {"BROADCAST_SQS_QUEUE_URL": "https://sqs.env/queue", "FLOWS_BASE_URL": "https://flows.env"})
-    def test_init_with_config_in_env(self):
-        """Test initialization with config in environment variables."""
-        context = create_context(credentials={"flows_jwt": "jwt-token"})
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender.queue_url == "https://sqs.env/queue"
-        assert sender.flows_url == "https://flows.env"
+        assert sender.flows_url == "https://flows.env.ai"
 
     def test_init_project_overrides_credentials(self):
-        """Test that project config takes priority over credentials."""
         context = create_context(
-            project={"sqs_queue_url": "https://sqs.project/queue", "flows_url": "https://flows.project"},
-            credentials={"sqs_queue_url": "https://sqs.creds/queue", "flows_url": "https://flows.creds"},
+            project={"flows_url": "https://flows.project", "auth_token": "tk"},
+            credentials={"flows_url": "https://flows.creds"},
         )
+        sender = BroadcastSender(context)
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender.queue_url == "https://sqs.project/queue"
         assert sender.flows_url == "https://flows.project"
 
-    def test_init_missing_queue_url_raises(self):
-        """Test that missing queue URL raises error."""
-        context = create_context(
-            project={"flows_url": "https://flows.weni.ai", "flows_jwt": "jwt-token"}
-        )
-
-        with pytest.raises(BroadcastSenderConfigError) as exc_info:
-            BroadcastSender(context)
-
-        assert "sqs_queue_url" in str(exc_info.value)
-
     def test_init_missing_flows_url_raises(self):
-        """Test that missing flows URL raises error."""
-        context = create_context(
-            project={"sqs_queue_url": "https://sqs/queue", "flows_jwt": "jwt-token"}
-        )
+        context = create_context(project={"auth_token": "tk"})
 
         with pytest.raises(BroadcastSenderConfigError) as exc_info:
             BroadcastSender(context)
 
         assert "flows_url" in str(exc_info.value)
 
-    def test_init_jwt_token_optional(self):
-        """Test that JWT token is optional (doesn't raise if missing)."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+    def test_init_auth_token_optional(self):
+        context = create_context(project={"flows_url": "https://flows.weni.ai"})
+        sender = BroadcastSender(context)
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        assert sender.auth_token is None
 
-        assert sender.jwt_token is None
+    def test_flows_url_trailing_slash_stripped(self):
+        context = create_context(project=_default_project(flows_url="https://flows.weni.ai/"))
+        sender = BroadcastSender(context)
 
-    def test_jwt_token_from_jwt_key(self):
-        """Test that JWT can be read from 'jwt' key as fallback."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-                "jwt": "fallback-jwt-token",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender.jwt_token == "fallback-jwt-token"
+        assert sender.flows_url == "https://flows.weni.ai"
 
 
 class TestBroadcastSenderContactUrn:
-    """Tests for contact URN extraction."""
-
-    def test_get_contact_urn_from_urns_list(self):
-        """Test extracting URN from urns list."""
+    def test_from_urns_list(self):
         context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
+            project=_default_project(),
             contact={"urns": ["whatsapp:5511999999999", "tel:+5511999999999"]},
         )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
+        sender = BroadcastSender(context)
         assert sender._get_contact_urn() == "whatsapp:5511999999999"
 
-    def test_get_contact_urn_from_urn_field(self):
-        """Test extracting URN from urn field."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
-            contact={"urn": "whatsapp:5511999999999"},
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
+    def test_from_urn_field(self):
+        context = create_context(project=_default_project(), contact={"urn": "whatsapp:5511999999999"})
+        sender = BroadcastSender(context)
         assert sender._get_contact_urn() == "whatsapp:5511999999999"
 
-    def test_get_contact_urn_empty_urns(self):
-        """Test with empty urns list."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
-            contact={"urns": []},
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender._get_contact_urn() is None
-
-    def test_get_contact_urn_from_parameters_fallback(self):
-        """Test extracting URN from parameters when contact is empty."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
-            parameters={"contact_urn": "whatsapp:5584988242399"},
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
+    def test_from_parameters_fallback(self):
+        context = create_context(project=_default_project(), parameters={"contact_urn": "whatsapp:5584988242399"})
+        sender = BroadcastSender(context)
         assert sender._get_contact_urn() == "whatsapp:5584988242399"
 
-    def test_get_contact_urn_contact_takes_priority_over_parameters(self):
-        """Test that contact.urns takes priority over parameters.contact_urn."""
+    def test_contact_takes_priority_over_parameters(self):
         context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
+            project=_default_project(),
             contact={"urns": ["whatsapp:5511999999999"]},
             parameters={"contact_urn": "whatsapp:5584988242399"},
         )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
+        sender = BroadcastSender(context)
         assert sender._get_contact_urn() == "whatsapp:5511999999999"
 
-    def test_get_contact_urn_no_contact_no_parameters(self):
-        """Test with no contact info and no parameters."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+    def test_empty_urns_list(self):
+        context = create_context(project=_default_project(), contact={"urns": []})
+        sender = BroadcastSender(context)
+        assert sender._get_contact_urn() is None
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
+    def test_no_contact_no_parameters(self):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
         assert sender._get_contact_urn() is None
 
 
-class TestBroadcastSenderBuildPayload:
-    """Tests for payload building."""
-
-    def test_build_payload_basic(self):
-        """Test building basic payload."""
+class TestBroadcastSenderBuildRequestBody:
+    def test_basic_body(self):
         context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-                "flows_jwt": "jwt-token-123",
-                "project_uuid": "proj-uuid",
-            },
+            project=_default_project(channel_uuid="ch-123"),
             contact={"urns": ["whatsapp:5511999999999"]},
         )
+        sender = BroadcastSender(context)
+        body = sender._build_request_body({"text": "Hello"})
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        assert body == {
+            "msg": {"text": "Hello"},
+            "urns": ["whatsapp:5511999999999"],
+            "channel": "ch-123",
+        }
 
-        message_payload = {"text": "Hello World"}
-        payload = sender.build_payload(message_payload)
+    def test_body_without_urn(self):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
+        body = sender._build_request_body({"text": "Hello"})
 
-        assert payload["msg"] == {"text": "Hello World"}
-        assert payload["flows_url"] == "https://flows.weni.ai"
-        assert payload["urns"] == ["whatsapp:5511999999999"]
-        assert payload["jwt_token"] == "jwt-token-123"
-        assert payload["project_uuid"] == "proj-uuid"
+        assert "urns" not in body
 
-    def test_build_payload_without_urn(self):
-        """Test payload without contact URN."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+    def test_body_without_channel(self):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
+        body = sender._build_request_body({"text": "Hello"})
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        assert "channel" not in body
 
-        message_payload = {"text": "Hello"}
-        payload = sender.build_payload(message_payload)
 
-        assert "urns" not in payload
+class TestBroadcastSenderURL:
+    def test_build_url(self):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
 
-    def test_build_payload_without_jwt(self):
-        """Test payload without JWT token."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+        assert sender._build_url() == "https://flows.weni.ai/api/v2/whatsapp_broadcasts.json"
 
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+    def test_build_url_no_double_slash(self):
+        context = create_context(project=_default_project(flows_url="https://flows.weni.ai/"))
+        sender = BroadcastSender(context)
 
-        message_payload = {"text": "Hello"}
-        payload = sender.build_payload(message_payload)
+        assert sender._build_url() == "https://flows.weni.ai/api/v2/whatsapp_broadcasts.json"
 
-        assert "jwt_token" not in payload
+
+class TestBroadcastSenderHeaders:
+    def test_headers_with_token(self):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
+        headers = sender._build_headers()
+
+        assert headers == {
+            "Content-Type": "application/json",
+            "Authorization": "Token test-token",
+        }
+
+    def test_headers_without_token(self):
+        context = create_context(project={"flows_url": "https://flows.weni.ai"})
+        sender = BroadcastSender(context)
+        headers = sender._build_headers()
+
+        assert headers == {"Content-Type": "application/json"}
+        assert "Authorization" not in headers
 
 
 class TestBroadcastSenderSend:
-    """Tests for sending messages to SQS."""
+    @patch("weni.broadcasts.sender.requests.post")
+    def test_send_success(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"id": 5104}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
-    def test_send_success(self):
-        """Test successful send to SQS."""
         context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
-                "flows_url": "https://flows.weni.ai",
-                "flows_jwt": "jwt-token",
-            },
+            project=_default_project(channel_uuid="ch-123"),
             contact={"urns": ["whatsapp:5511999999999"]},
         )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message.return_value = {"MessageId": "msg-123"}
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        sender = BroadcastSender(context)
         result = sender.send({"text": "Hello!"})
 
-        assert result["MessageId"] == "msg-123"
-        mock_sqs.send_message.assert_called_once()
-
-        # Verify the call arguments
-        call_args = mock_sqs.send_message.call_args
-        assert call_args.kwargs["QueueUrl"] == "https://sqs.us-east-1.amazonaws.com/123/queue"
-
-        body = json.loads(call_args.kwargs["MessageBody"])
-        assert body["msg"]["text"] == "Hello!"
-        assert body["flows_url"] == "https://flows.weni.ai"
-        assert body["urns"] == ["whatsapp:5511999999999"]
-        assert body["jwt_token"] == "jwt-token"
-
-    def test_send_sqs_error(self):
-        """Test handling SQS errors."""
-        from botocore.exceptions import ClientError
-
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
+        assert result == {"id": 5104}
+        mock_post.assert_called_once_with(
+            "https://flows.weni.ai/api/v2/whatsapp_broadcasts.json",
+            headers={"Content-Type": "application/json", "Authorization": "Token test-token"},
+            json={"msg": {"text": "Hello!"}, "urns": ["whatsapp:5511999999999"], "channel": "ch-123"},
         )
 
-        mock_sqs = MagicMock()
-        mock_sqs.send_message.side_effect = ClientError(
-            {"Error": {"Code": "AccessDenied", "Message": "Access Denied"}},
-            "SendMessage",
-        )
+    @patch("weni.broadcasts.sender.requests.post")
+    def test_send_http_error(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = '{"detail": "Invalid URN"}'
+        mock_response.raise_for_status.side_effect = __import__("requests").exceptions.HTTPError(response=mock_response)
+        mock_post.return_value = mock_response
 
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
 
         with pytest.raises(BroadcastSenderError) as exc_info:
             sender.send({"text": "Hello"})
 
-        assert "Failed to send message to SQS" in str(exc_info.value)
+        assert "400" in str(exc_info.value)
+
+    @patch("weni.broadcasts.sender.requests.post")
+    def test_send_connection_error(self, mock_post):
+        mock_post.side_effect = __import__("requests").exceptions.ConnectionError("Connection refused")
+
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
+
+        with pytest.raises(BroadcastSenderError) as exc_info:
+            sender.send({"text": "Hello"})
+
+        assert "Failed to send broadcast" in str(exc_info.value)
 
 
 class TestBroadcastSenderSendBatch:
-    """Tests for batch sending messages to SQS."""
+    @patch("weni.broadcasts.sender.requests.post")
+    def test_send_batch(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 201
+        mock_response.json.return_value = {"id": 1}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
-    def test_send_batch_success(self):
-        """Test successful batch send."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            },
-            contact={"urns": ["whatsapp:5511999999999"]},
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message_batch.return_value = {
-            "Successful": [{"Id": "0", "MessageId": "msg-1"}, {"Id": "1", "MessageId": "msg-2"}],
-            "Failed": [],
-        }
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-        result = sender.send_batch([{"text": "Message 1"}, {"text": "Message 2"}])
-
-        assert len(result["Successful"]) == 2
-        assert len(result["Failed"]) == 0
-
-        mock_sqs.send_message_batch.assert_called_once()
-        call_args = mock_sqs.send_message_batch.call_args
-        assert len(call_args.kwargs["Entries"]) == 2
-
-    def test_send_batch_empty_list(self):
-        """Test batch send with empty list."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        result = sender.send_batch([])
-
-        assert result == {"Successful": [], "Failed": []}
-        mock_sqs.send_message_batch.assert_not_called()
-
-    def test_send_batch_sqs_error(self):
-        """Test handling SQS errors in batch."""
-        from botocore.exceptions import ClientError
-
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message_batch.side_effect = ClientError(
-            {"Error": {"Code": "ServiceUnavailable", "Message": "Service Unavailable"}},
-            "SendMessageBatch",
-        )
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        with pytest.raises(BroadcastSenderError) as exc_info:
-            sender.send_batch([{"text": "Hello"}])
-
-        assert "Failed to send batch to SQS" in str(exc_info.value)
-
-
-class TestBroadcastSenderLazyClient:
-    """Tests for lazy SQS client initialization."""
-
-    @patch("weni.broadcasts.sender.boto3")
-    def test_lazy_sqs_client_creation(self, mock_boto3):
-        """Test that SQS client is created lazily."""
-        mock_client = MagicMock()
-        mock_boto3.client.return_value = mock_client
-
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
+        context = create_context(project=_default_project(), contact={"urns": ["whatsapp:5511999999999"]})
         sender = BroadcastSender(context)
+        results = sender.send_batch([{"text": "Msg 1"}, {"text": "Msg 2"}])
 
-        # Client should not be created yet
-        mock_boto3.client.assert_not_called()
+        assert len(results) == 2
+        assert mock_post.call_count == 2
 
-        # Access the client
-        client = sender.sqs_client
+    @patch("weni.broadcasts.sender.requests.post")
+    def test_send_batch_empty(self, mock_post):
+        context = create_context(project=_default_project())
+        sender = BroadcastSender(context)
+        results = sender.send_batch([])
 
-        # Now it should be created
-        mock_boto3.client.assert_called_once_with("sqs")
-        assert client == mock_client
-
-        # Second access should not create a new client
-        client2 = sender.sqs_client
-        assert mock_boto3.client.call_count == 1
-        assert client2 == mock_client
-
-
-class TestBroadcastSenderFifo:
-    """Tests for FIFO queue support."""
-
-    def test_is_fifo_detected_by_url_suffix(self):
-        """Test that FIFO queues are detected by .fifo suffix."""
-        fifo_context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/my-queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        standard_context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/my-queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        fifo_sender = BroadcastSender(fifo_context, sqs_client=mock_sqs)
-        standard_sender = BroadcastSender(standard_context, sqs_client=mock_sqs)
-
-        assert fifo_sender.is_fifo is True
-        assert standard_sender.is_fifo is False
-
-    def test_message_group_id_uses_project_uuid(self):
-        """Test that MessageGroupId uses project_uuid when available."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-                "project_uuid": "proj-123-abc",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender._get_message_group_id() == "proj-123-abc"
-
-    def test_message_group_id_default_fallback(self):
-        """Test that MessageGroupId falls back to default when no project_uuid."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        assert sender._get_message_group_id() == "default-broadcast-group"
-
-    def test_deduplication_id_is_unique(self):
-        """Test that each deduplication ID is unique."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-
-        ids = [sender._generate_deduplication_id() for _ in range(100)]
-        assert len(set(ids)) == 100  # All unique
-
-    def test_send_fifo_includes_fifo_params(self):
-        """Test that send includes FIFO parameters for FIFO queues."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-                "project_uuid": "proj-uuid-123",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message.return_value = {"MessageId": "msg-123"}
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-        sender.send({"text": "Hello FIFO!"})
-
-        call_args = mock_sqs.send_message.call_args
-        assert call_args.kwargs["MessageGroupId"] == "proj-uuid-123"
-        assert "MessageDeduplicationId" in call_args.kwargs
-        # Verify deduplication ID is a valid UUID format
-        assert len(call_args.kwargs["MessageDeduplicationId"]) == 36
-
-    def test_send_standard_excludes_fifo_params(self):
-        """Test that send excludes FIFO parameters for standard queues."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs.us-east-1.amazonaws.com/123/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message.return_value = {"MessageId": "msg-123"}
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-        sender.send({"text": "Hello Standard!"})
-
-        call_args = mock_sqs.send_message.call_args
-        assert "MessageGroupId" not in call_args.kwargs
-        assert "MessageDeduplicationId" not in call_args.kwargs
-
-    def test_send_batch_fifo_includes_fifo_params(self):
-        """Test that send_batch includes FIFO parameters for each entry."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue.fifo",
-                "flows_url": "https://flows.weni.ai",
-                "project_uuid": "proj-uuid",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message_batch.return_value = {
-            "Successful": [{"Id": "0"}, {"Id": "1"}],
-            "Failed": [],
-        }
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-        sender.send_batch([{"text": "Msg 1"}, {"text": "Msg 2"}])
-
-        call_args = mock_sqs.send_message_batch.call_args
-        entries = call_args.kwargs["Entries"]
-
-        assert len(entries) == 2
-        for entry in entries:
-            assert entry["MessageGroupId"] == "proj-uuid"
-            assert "MessageDeduplicationId" in entry
-
-        # Deduplication IDs should be unique
-        dedup_ids = [e["MessageDeduplicationId"] for e in entries]
-        assert len(set(dedup_ids)) == 2
-
-    def test_send_batch_standard_excludes_fifo_params(self):
-        """Test that send_batch excludes FIFO parameters for standard queues."""
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        mock_sqs = MagicMock()
-        mock_sqs.send_message_batch.return_value = {
-            "Successful": [{"Id": "0"}],
-            "Failed": [],
-        }
-
-        sender = BroadcastSender(context, sqs_client=mock_sqs)
-        sender.send_batch([{"text": "Msg 1"}])
-
-        call_args = mock_sqs.send_message_batch.call_args
-        entries = call_args.kwargs["Entries"]
-
-        for entry in entries:
-            assert "MessageGroupId" not in entry
-            assert "MessageDeduplicationId" not in entry
+        assert results == []
+        mock_post.assert_not_called()
