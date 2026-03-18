@@ -1,11 +1,8 @@
 """
 Broadcast class for sending messages during tool execution.
 
-This provides the foundation for sending WhatsApp messages asynchronously
-during tool execution, without blocking the main response.
-
-Messages are sent to an SQS queue and processed by a Flows worker,
-providing near-zero latency with 100% delivery guarantee.
+This provides the foundation for sending WhatsApp messages
+during tool execution via the Flows WhatsApp Broadcasts API.
 """
 
 from contextlib import contextmanager
@@ -134,14 +131,8 @@ class Broadcast:
     """
     Static class for sending broadcast messages during tool execution.
 
-    Messages sent via Broadcast.send() are queued and sent asynchronously
-    to an SQS queue. A Flows worker processes the queue and delivers
-    the messages via WhatsApp.
-
-    This provides:
-    - Near-zero latency (~5-10ms to enqueue)
-    - 100% delivery guarantee (SQS persists the message)
-    - No blocking of tool execution
+    Messages sent via Broadcast.send() are POSTed directly to the
+    Flows WhatsApp Broadcasts API.
 
     Setup:
         The sender is automatically configured by Tool.__new__() using
@@ -149,26 +140,14 @@ class Broadcast:
 
     Example:
         ```python
-        from weni.broadcasts import Broadcast, Text, Attachment
+        from weni.broadcasts import Broadcast, Text
         from weni.components import FinalResponse
 
         class MyTool(Tool):
             def execute(self, context: Context):
-                # Send immediate feedback to user
                 Broadcast.send(Text(text="Processing your request..."))
-
-                # Do some work
-                result = expensive_api_call()
-
-                # Send result as attachment
-                Broadcast.send(Attachment(
-                    text="Here's what I found",
-                    image=result["image_url"]
-                ))
-
-                return FinalResponse(
-                    broadcasts=Broadcast.get_broadcasts(),
-                )
+                result = do_work()
+                return FinalResponse()
         ```
     """
 
@@ -177,21 +156,13 @@ class Broadcast:
         """
         Configure the broadcast sender with the execution context.
 
-        This must be called before using Broadcast.send() to ensure
-        the sender knows where to send messages (SQS queue URL, Flows URL, etc.)
+        Called automatically by Tool.__new__(). No manual call needed.
 
         Args:
             context: The execution context containing configuration.
 
         Raises:
             BroadcastSenderConfigError: If required configuration is missing.
-
-        Example:
-            ```python
-            def execute(self, context: Context):
-                Broadcast.configure(context)
-                Broadcast.send(Text(text="Hello!"))
-            ```
         """
         from weni.broadcasts.sender import BroadcastSender
 
@@ -206,28 +177,16 @@ class Broadcast:
     @staticmethod
     def send(message: Message) -> None:
         """
-        Queue a message to be sent to the contact via SQS.
-
-        The message is sent to an SQS queue for asynchronous processing
-        by a Flows worker. This provides near-zero latency.
+        Send a broadcast message to the contact via the Flows API.
 
         If configure() hasn't been called, the message is only registered
-        in BroadcastEvent for later processing (backward compatibility).
+        in BroadcastEvent for tracking (backward compatibility).
 
         Args:
             message: The Message object to send (Text, Attachment, etc.)
-
-        Example:
-            ```python
-            Broadcast.configure(context)
-            Broadcast.send(Text(text="Hello!"))
-            Broadcast.send(Attachment(text="Image", image="https://..."))
-            ```
         """
-        # Always register for tracking/debugging
         BroadcastEvent.register(message)
 
-        # Send to SQS if sender is configured
         sender = Broadcast._get_sender()
         if sender is not None:
             payload = message.format_message()
@@ -236,32 +195,17 @@ class Broadcast:
     @staticmethod
     def send_many(messages: list[Message]) -> None:
         """
-        Queue multiple messages to be sent via SQS batch.
-
-        More efficient than calling send() multiple times when
-        sending several messages at once.
+        Send multiple broadcast messages.
 
         Args:
             messages: List of Message objects to send.
-
-        Example:
-            ```python
-            Broadcast.configure(context)
-            Broadcast.send_many([
-                Text(text="Message 1"),
-                Text(text="Message 2"),
-                Text(text="Message 3"),
-            ])
-            ```
         """
         if not messages:
             return
 
-        # Register all for tracking
         for message in messages:
             BroadcastEvent.register(message)
 
-        # Send batch to SQS if sender is configured
         sender = Broadcast._get_sender()
         if sender is not None:
             payloads = [msg.format_message() for msg in messages]
@@ -285,22 +229,7 @@ class Broadcast:
         """
         Get all broadcasts that were sent during this execution.
 
-        Returns a copy of all messages that were registered via send().
-        This is intended to be passed to FinalResponse so Nexus has
-        context about what broadcasts were dispatched.
-
         Returns:
             List of message payloads that were sent.
-
-        Example:
-            ```python
-            Broadcast.configure(context)
-            Broadcast.send(Text(text="Hello!"))
-
-            return FinalResponse(
-                data=result,
-                broadcasts=Broadcast.get_broadcasts(),
-            )
-            ```
         """
         return BroadcastEvent.get_pending()
