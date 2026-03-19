@@ -1,7 +1,7 @@
 from typing import Any
 
 from weni.broadcasts.broadcast import Broadcast
-from weni.components.component import FinalResponse
+from weni.responses.responses import FinalResponse
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse

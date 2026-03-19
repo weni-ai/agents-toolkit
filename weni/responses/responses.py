@@ -259,3 +259,35 @@ class LocationResponse(Response):
 
     def __new__(cls, data: Any) -> ResponseObject:  # type: ignore
         return super().__new__(cls, data=data, components=[Text, Location])
+
+
+class FinalResponse:
+    """
+    Signals the end of tool execution.
+
+    Broadcast messages are collected automatically from Component.get_messages().
+
+    Example:
+        ```python
+        from weni.broadcasts import Broadcast, Text
+        from weni.components import FinalResponse
+
+        class MyTool(Tool):
+            def execute(self, context: Context):
+                Broadcast.send(Text(text="Processing your request..."))
+                result = do_work()
+
+                return FinalResponse()
+        ```
+    """
+
+    @property
+    def broadcasts(self) -> list[dict[str, Any]]:
+        return Component.get_messages()
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a dict for transmission to Nexus."""
+        return {
+            "is_final_output": True,
+            "messages": Component.get_messages(),
+        }
