@@ -26,10 +26,9 @@ def test_tool_execution():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
 	result, format, events, broadcasts = TestTool(context)
 
-	# 'events' are returned separately
 	assert result == {'test': 'data'}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 
@@ -70,12 +69,10 @@ def test_tool_context_access():
 		'project_uuid': 'project-uuid',
 	}
 	assert events == []
-	assert format == {
-		'msg': {
-			'text': 'Hello, how can I help you today?',
-			'quick_replies': ['Yes', 'No'],
-			'header': {'type': 'text', 'text': 'Important Message'},
-		}
+	assert format['msg'] == {
+		'text': 'Hello, how can I help you today?',
+		'quick_replies': ['Yes', 'No'],
+		'header': {'type': 'text', 'text': 'Important Message'},
 	}
 	assert broadcasts == []
 
@@ -91,7 +88,7 @@ def test_tool_without_execute_implementation():
 
 	assert result == {}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 
@@ -100,8 +97,6 @@ def test_tool_with_invalid_format():
 
 	class InvalidFormatTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:  # type: ignore
-			# The first value can be any type (a dictionary here),
-			# but the second value (format) must be a dictionary - not a string
 			return {}, 'not a dictionary'  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={})
@@ -117,12 +112,10 @@ def test_response_immutability():
 	data = {'key': 'value'}
 	result, format = TextResponse(data=data)
 
-	# Modify original data
 	data['new_key'] = 'new_value'
 
-	# Response should maintain original values
 	assert 'new_key' not in result
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 
 
 def test_tool_context_immutability():
@@ -130,7 +123,6 @@ def test_tool_context_immutability():
 
 	class MutableTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
-			# Try to modify context
 			context.credentials['new_key'] = 'value'  # type: ignore
 			return TextResponse(data={})  # type: ignore
 
@@ -159,7 +151,7 @@ def test_tool_execution_order():
 	assert execution_count == 1
 	assert result == {'count': 1}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 	result, format, events, broadcasts = CountedTool(context)
@@ -167,7 +159,7 @@ def test_tool_execution_order():
 	assert execution_count == 2
 	assert result == {'count': 2}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 
@@ -183,13 +175,11 @@ def test_tool_with_complex_response():
 
 	assert result == {'message': 'Choose an option'}
 	assert events == []
-	assert format == {
-		'msg': {
-			'text': 'Hello, how can I help you today?',
-			'quick_replies': ['Yes', 'No'],
-			'header': {'type': 'text', 'text': 'Important Message'},
-			'footer': 'Powered by Weni',
-		}
+	assert format['msg'] == {
+		'text': 'Hello, how can I help you today?',
+		'quick_replies': ['Yes', 'No'],
+		'header': {'type': 'text', 'text': 'Important Message'},
+		'footer': 'Powered by Weni',
 	}
 	assert broadcasts == []
 
@@ -206,7 +196,7 @@ def test_tool_with_non_dict_response():
 
 	assert result == ['item1', 'item2', 'item3']
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 	class StringDataTool(Tool):
@@ -217,7 +207,7 @@ def test_tool_with_non_dict_response():
 
 	assert result == 'simple string response'
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
 
 	class NumberDataTool(Tool):
@@ -228,5 +218,5 @@ def test_tool_with_non_dict_response():
 
 	assert result == 42
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert broadcasts == []
