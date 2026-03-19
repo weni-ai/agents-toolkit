@@ -68,6 +68,11 @@ class Tool:
                 raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
             if isinstance(result, FinalResponse):
                 result = result.to_dict()
+            elif broadcasts:
+                if isinstance(result, dict):
+                    result["messages"] = broadcasts
+                else:
+                    result = {"result": result, "messages": broadcasts}
 
         return result, format, events, broadcasts
 
