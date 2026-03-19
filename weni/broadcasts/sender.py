@@ -11,7 +11,6 @@ from typing import Any
 import requests
 
 from weni.context import Context
-import time
 
 
 class BroadcastSenderError(Exception):
@@ -146,12 +145,7 @@ class BroadcastSender:
         body = self._build_request_body(message_payload)
 
         try:
-            print(url, headers, body)
-            start = time.time()
             response = requests.post(url, headers=headers, json=body)
-            end = time.time()
-            print(f"Time taken: {end - start} seconds")
-            print(response.status_code, response.text)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:
