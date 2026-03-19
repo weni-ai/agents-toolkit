@@ -9,7 +9,6 @@ import pytest
 
 from weni.broadcasts.sender import (
     BroadcastSender,
-    BroadcastSenderConfigError,
     BroadcastSenderError,
 )
 from weni.context import Context

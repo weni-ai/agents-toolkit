@@ -313,7 +313,6 @@ def test_traced_tool_integration():
     # Use Tool.__new__ to test the actual integration with trace return
     result = TestTracedTool(context)
     
-    # Tool with Traced returns (result, format, events, traces, broadcasts)
     assert len(result) == 5
     data, format, events, traces, broadcasts = result
 

@@ -19,15 +19,7 @@ Example:
 
 from weni.broadcasts.broadcast import Broadcast, BroadcastEvent
 from weni.broadcasts.messages import (
-    Attachment,
-    Catalog,
-    CTAMessage,
-    ListItem,
-    ListMessage,
-    Location,
     Message,
-    OrderDetails,
-    OrderItem,
     QuickReply,
     Text,
 )
@@ -48,13 +40,5 @@ __all__ = [
     # Message types
     "Message",
     "Text",
-    "Attachment",
     "QuickReply",
-    "ListItem",
-    "ListMessage",
-    "CTAMessage",
-    "Location",
-    "OrderItem",
-    "OrderDetails",
-    "Catalog",
 ]

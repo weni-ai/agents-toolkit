@@ -11,8 +11,8 @@ from weni.components import (
     Location,
     OrderDetails,
     Attachments,
-    FinalResponse,
 )
+from weni.responses import FinalResponse
 
 
 def test_get_format_example_method_cannot_be_overridden():
