@@ -77,13 +77,11 @@ class TestBroadcastSenderInit:
 
         assert sender.flows_url == "https://flows.project"
 
-    def test_init_missing_flows_url_raises(self):
+    def test_init_falls_back_to_default_flows_url(self):
         context = create_context(project={"auth_token": "tk"})
+        sender = BroadcastSender(context)
 
-        with pytest.raises(BroadcastSenderConfigError) as exc_info:
-            BroadcastSender(context)
-
-        assert "flows_url" in str(exc_info.value)
+        assert sender.flows_url == "https://flows.stg.cloud.weni.ai"
 
     def test_init_auth_token_optional(self):
         context = create_context(project={"flows_url": "https://flows.weni.ai"})

@@ -47,12 +47,12 @@ class BroadcastSender:
     """
 
     BROADCASTS_PATH = "/api/v2/whatsapp_broadcasts.json"
+    DEFAULT_FLOWS_URL = "https://flows.stg.cloud.weni.ai"
 
     def __init__(self, context: Context):
         self.context = context
 
-        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL")
-        assert flows_url is not None
+        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL", required=False) or self.DEFAULT_FLOWS_URL
         self.flows_url: str = flows_url.rstrip("/")
 
         self.auth_token = self._get_auth_token()
