@@ -9,6 +9,7 @@ from .responses import (
     CTAMessageResponse,
     OrderDetailsResponse,
     LocationResponse,
+    FinalResponse,
 )
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "CTAMessageResponse",
     "OrderDetailsResponse",
     "LocationResponse",
+    "FinalResponse",
 ]
