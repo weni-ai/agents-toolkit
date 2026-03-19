@@ -53,9 +53,10 @@ def test_rule_implementation():
     result = rule.execute(processed_data)
     assert result is False
     
-    # Test using Rule(data) directly - returns (bool, traces)
+    # Test using Rule(data) directly - returns (instance, bool, traces)
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
-    result, traces = TestRule(processed_data)
+    instance, result, traces = TestRule(processed_data)
+    assert isinstance(instance, TestRule)
     assert result is True
     assert traces == {}
     
@@ -71,7 +72,7 @@ def test_rule_implementation():
 
 
 def test_rule_with_traced_returns_tuple():
-    """Test that Rule with Traced returns tuple (result, traces) when @trace() is used"""
+    """Test that Rule with Traced returns tuple (instance, result, traces) when @trace() is used"""
     
     class TracedRule(Traced, Rule):
         template = "Test template"
@@ -90,13 +91,16 @@ def test_rule_with_traced_returns_tuple():
     
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
     
-    # Using Rule(data) directly - should return tuple (bool, traces)
+    # Using Rule(data) directly - should return tuple (instance, bool, traces)
     result = TracedRule(processed_data)
     
-    # Should return tuple (bool, traces)
+    # Should return tuple (instance, bool, traces)
     assert isinstance(result, tuple)
-    assert len(result) == 2
-    bool_result, traces = result
+    assert len(result) == 3
+    instance, bool_result, traces = result
+    
+    # Verify instance
+    assert isinstance(instance, TracedRule)
     
     # Verify boolean result
     assert bool_result is True
@@ -130,13 +134,16 @@ def test_rule_with_traced_false_result():
     
     processed_data = ProcessedData("test-urn", {})
     
-    # Using Rule(data) directly - should return tuple (bool, traces)
+    # Using Rule(data) directly - should return tuple (instance, bool, traces)
     result = TracedRule(processed_data)
     
-    # Should return tuple (bool, traces)
+    # Should return tuple (instance, bool, traces)
     assert isinstance(result, tuple)
-    assert len(result) == 2
-    bool_result, traces = result
+    assert len(result) == 3
+    instance, bool_result, traces = result
+    
+    # Verify instance
+    assert isinstance(instance, TracedRule)
     
     # Verify boolean result is False
     assert bool_result is False
@@ -150,7 +157,7 @@ def test_rule_with_traced_false_result():
 
 
 def test_rule_with_traced_no_trace_decorator():
-    """Test that Rule with Traced but no @trace() decorator returns tuple with empty traces"""
+    """Test that Rule with Traced but no @trace() decorator returns tuple (instance, bool, traces) with empty traces"""
     
     class TracedRuleWithoutTrace(Traced, Rule):
         template = "Test template"
@@ -164,13 +171,14 @@ def test_rule_with_traced_no_trace_decorator():
     
     processed_data = ProcessedData("test-urn", {"test_key": "value"})
     
-    # Using Rule(data) directly - should return tuple (bool, traces)
+    # Using Rule(data) directly - should return tuple (instance, bool, traces)
     result = TracedRuleWithoutTrace(processed_data)
     
-    # Should return tuple (bool, traces) even when no @trace() methods are called
+    # Should return tuple (instance, bool, traces) even when no @trace() methods are called
     assert isinstance(result, tuple)
-    assert len(result) == 2
-    bool_result, traces = result
+    assert len(result) == 3
+    instance, bool_result, traces = result
+    assert isinstance(instance, TracedRuleWithoutTrace)
     assert isinstance(bool_result, bool)
     assert bool_result is True
     # Traces should be empty dict when no @trace() decorator is used

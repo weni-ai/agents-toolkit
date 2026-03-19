@@ -247,6 +247,7 @@ def test_tool_with_non_dict_response():
 def test_tool_with_traced_returns_tuple():
 	"""Test that Tool with Traced returns tuple (result, format, events, traces, broadcasts)"""
 
+
 	class TracedTool(Traced, Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			processed = self._process_data(context)
