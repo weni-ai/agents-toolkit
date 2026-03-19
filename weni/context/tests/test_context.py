@@ -9,19 +9,22 @@ def test_context_initialization():
     globals_ = {"env": "production"}
     contact = {"name": "John Doe", "urn": "tel:+1234567890"}
     project = {"name": "Project 1", "uuid": "project-uuid"}
+    constants = {"INPUT": {"label": "Example", "required": True, "default": "Sample"}}
 
-    context = Context(credentials=credentials, parameters=parameters, globals=globals_, contact=contact, project=project)
+    context = Context(credentials=credentials, parameters=parameters, globals=globals_, contact=contact, project=project, constants=constants)
 
     assert isinstance(context.credentials, MappingProxyType)
     assert isinstance(context.parameters, MappingProxyType)
     assert isinstance(context.globals, MappingProxyType)
     assert isinstance(context.contact, MappingProxyType)
     assert isinstance(context.project, MappingProxyType)
+    assert isinstance(context.constants, MappingProxyType)
     assert context.credentials == credentials
     assert context.parameters == parameters
     assert context.globals == globals_
     assert context.contact == contact
     assert context.project == project
+    assert context.constants == constants
 
 def test_preprocessor_context_initialization():
     """Test basic preprocessor context initialization with all parameters"""

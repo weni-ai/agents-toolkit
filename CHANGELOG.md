@@ -1,4 +1,20 @@
 # Changelog
+## [2.4.2] - 2026-03-18
+
+- feat: return class instance in rule execution
+
+## [2.4.1] - 2026-03-18
+
+- feat: Always return traces in tool, rule and preprocessor execution
+
+# Changelog
+## [2.4.0] - 2026-02-19
+
+- feat: Add execution trace for agents
+
+## [2.3.3] - 2026-01-22
+
+- feat: Add constants in context
 
 ## [2.3.2] - 2025-09-27
 

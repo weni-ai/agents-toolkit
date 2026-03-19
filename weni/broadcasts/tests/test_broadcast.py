@@ -230,6 +230,7 @@ def create_context(
         globals=globals or {},
         contact=contact or {},
         project=project or {},
+        constants={},
     )
 
 

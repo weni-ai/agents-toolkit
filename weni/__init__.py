@@ -9,6 +9,7 @@ from weni.context import Context
 import weni.components as Components
 import weni.responses as Responses
 import weni.broadcasts as Broadcasts
+import weni.tracing as Tracing
 
 __all__ = [
     "Tool",
@@ -16,4 +17,5 @@ __all__ = [
     "Components",
     "Responses",
     "Broadcasts",
+    "Tracing",
 ]

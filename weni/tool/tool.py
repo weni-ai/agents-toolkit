@@ -74,7 +74,14 @@ class Tool:
                 else:
                     result = {"result": result, "messages": broadcasts}
 
-        return result, format, events, broadcasts
+        # Always returns traces. If the instance inherits from Traced and the trace is initialized,
+        # retrieves the traces. Otherwise, returns an empty dictionary.
+        traces = {}
+        if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
+            if instance._tracer_initialized:
+                traces = instance._get_trace_summary()
+
+        return result, format, events, traces, broadcasts
 
     def execute(self, context: Context) -> ResponseObject:
         """
