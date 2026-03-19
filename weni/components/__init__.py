@@ -23,12 +23,4 @@ __all__ = [
     "CTAMessage",
     "Location",
     "OrderDetails",
-    "FinalResponse",
 ]
-
-
-def __getattr__(name: str):
-    if name == "FinalResponse":
-        from weni.responses.responses import FinalResponse
-        return FinalResponse
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

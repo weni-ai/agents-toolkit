@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock, patch
 
 from weni.broadcasts.broadcast import Broadcast, BroadcastEvent, _sender_var
-from weni.broadcasts.messages import Attachment, Text
+from weni.broadcasts.messages import Text
 from weni.context import Context
 
 
@@ -195,25 +195,15 @@ class TestBroadcast:
         assert pending[0]["text"] == "Hello!"
         assert "type" not in pending[0]
 
-    def test_send_attachment(self):
-        """Test sending an attachment."""
-        Broadcast.send(Attachment(text="Image", image="https://example.com/img.png"))
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Image"
-        assert "attachments" in pending[0]
-        assert "type" not in pending[0]
-
     def test_send_multiple(self):
         """Test sending multiple messages."""
         Broadcast.send(Text(text="Processing..."))
-        Broadcast.send(Attachment(image="https://example.com/result.png"))
+        Broadcast.send(Text(text="Done!"))
 
         pending = BroadcastEvent.get_pending()
         assert len(pending) == 2
         assert pending[0]["text"] == "Processing..."
-        assert "attachments" in pending[1]
+        assert pending[1]["text"] == "Done!"
 
     def test_send_within_scope(self):
         """Test that send works correctly within a scope."""
