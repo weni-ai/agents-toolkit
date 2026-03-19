@@ -11,6 +11,7 @@ from typing import Any
 import requests
 
 from weni.context import Context
+import time
 
 
 class BroadcastSenderError(Exception):
@@ -52,8 +53,7 @@ class BroadcastSender:
     def __init__(self, context: Context):
         self.context = context
 
-        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL") or self.DEFAULT_FLOWS_URL
-        assert flows_url is not None
+        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL", required=False) or self.DEFAULT_FLOWS_URL
         self.flows_url: str = flows_url.rstrip("/")
 
         self.auth_token = self._get_auth_token()
@@ -146,7 +146,12 @@ class BroadcastSender:
         body = self._build_request_body(message_payload)
 
         try:
+            print(url, headers, body)
+            start = time.time()
             response = requests.post(url, headers=headers, json=body)
+            end = time.time()
+            print(f"Time taken: {end - start} seconds")
+            print(response.status_code, response.text)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.HTTPError as e:

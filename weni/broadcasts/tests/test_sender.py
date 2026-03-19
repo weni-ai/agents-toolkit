@@ -187,7 +187,7 @@ class TestBroadcastSenderHeaders:
 
         assert headers == {
             "Content-Type": "application/json",
-            "Authorization": "Token test-token",
+            "Authorization": "Bearer test-token",
         }
 
     def test_headers_without_token(self):
@@ -218,7 +218,7 @@ class TestBroadcastSenderSend:
         assert result == {"id": 5104}
         mock_post.assert_called_once_with(
             "https://flows.weni.ai/api/v2/whatsapp_broadcasts.json",
-            headers={"Content-Type": "application/json", "Authorization": "Token test-token"},
+            headers={"Content-Type": "application/json", "Authorization": "Bearer test-token"},
             json={"msg": {"text": "Hello!"}, "urns": ["whatsapp:5511999999999"], "channel": "ch-123"},
         )
 
