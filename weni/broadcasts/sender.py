@@ -46,13 +46,14 @@ class BroadcastSender:
         - Channel UUID: `channel_uuid` or `BROADCAST_CHANNEL_UUID` env var
     """
 
-    BROADCASTS_PATH = "/api/v2/internals/whatsapp_broadcasts"
+    BROADCASTS_PATH = "/api/v2/whatsapp_broadcasts.json"
     DEFAULT_FLOWS_URL = "https://flows.stg.cloud.weni.ai"
 
     def __init__(self, context: Context):
         self.context = context
 
-        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL", required=False) or self.DEFAULT_FLOWS_URL
+        flows_url = self._get_config("flows_url", "FLOWS_BASE_URL") or self.DEFAULT_FLOWS_URL
+        assert flows_url is not None
         self.flows_url: str = flows_url.rstrip("/")
 
         self.auth_token = self._get_auth_token()
@@ -102,7 +103,7 @@ class BroadcastSender:
     def _build_headers(self) -> dict[str, str]:
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if self.auth_token:
-            headers["Authorization"] = f"Token {self.auth_token}"
+            headers["Authorization"] = f"Bearer {self.auth_token}"
         return headers
 
     def _build_request_body(self, message_payload: dict[str, Any]) -> dict[str, Any]:
