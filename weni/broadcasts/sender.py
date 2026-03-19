@@ -46,7 +46,7 @@ class BroadcastSender:
         - Channel UUID: `channel_uuid` or `BROADCAST_CHANNEL_UUID` env var
     """
 
-    BROADCASTS_PATH = "/api/v2/whatsapp_broadcasts.json"
+    BROADCASTS_PATH = "/api/v2/internals/whatsapp_broadcasts"
     DEFAULT_FLOWS_URL = "https://flows.stg.cloud.weni.ai"
 
     def __init__(self, context: Context):
