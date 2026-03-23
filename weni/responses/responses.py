@@ -54,7 +54,7 @@ class Response:
         for component in instance._components:
             final_format["msg"] = {**final_format["msg"], **component.get_format_example()}
 
-        final_format["messages"] = Component.get_messages()
+        final_format["messages"] = instance._tool._pending_broadcasts
 
         return instance._data, final_format
 
