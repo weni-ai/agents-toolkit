@@ -10,6 +10,7 @@ from contextvars import ContextVar
 from typing import TYPE_CHECKING, Generator
 
 from weni.broadcasts.messages import Message
+from weni.broadcasts.sender import BroadcastSender
 
 if TYPE_CHECKING:
     from weni.broadcasts.sender import BroadcastSender
