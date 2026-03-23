@@ -59,6 +59,7 @@ class Tool:
             format: dict[str, Any] = {}
         else:
             result, format = execute_result
+            format["messages"] = broadcasts
             if not isinstance(format, dict):
                 raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
             if isinstance(result, FinalResponse):
