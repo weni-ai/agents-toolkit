@@ -108,3 +108,37 @@ class QuickReply(Message):
         }
         self._apply_header_footer(payload, self.header, self.footer)
         return payload
+
+
+@dataclass
+class Catalog(Message):
+    """
+    Catalog message for product browsing.
+
+    Args:
+        text: The message text.
+        thumbnail_product_retailer_id: Product ID for the thumbnail.
+
+    Example:
+        ```python
+        msg = Catalog(
+            text="Browse our products",
+            thumbnail_product_retailer_id="PRODUCT-123"
+        )
+        Broadcast.send(msg)
+        ```
+    """
+
+    text: str
+    thumbnail_product_retailer_id: str | None = None
+
+    def format_message(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "text": self.text,
+            "interaction_type": "catalog",
+        }
+
+        if self.thumbnail_product_retailer_id:
+            payload["thumbnail_product_retailer_id"] = self.thumbnail_product_retailer_id
+
+        return payload

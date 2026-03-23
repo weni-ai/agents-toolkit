@@ -19,6 +19,7 @@ Example:
 
 from weni.broadcasts.broadcast import Broadcast, BroadcastEvent
 from weni.broadcasts.messages import (
+    Catalog,
     Message,
     QuickReply,
     Text,
@@ -41,4 +42,5 @@ __all__ = [
     "Message",
     "Text",
     "QuickReply",
+    "Catalog",
 ]

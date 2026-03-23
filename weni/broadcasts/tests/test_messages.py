@@ -3,6 +3,7 @@ Tests for broadcast message types.
 """
 
 from weni.broadcasts.messages import (
+    Catalog,
     Text,
     QuickReply,
 )
@@ -38,3 +39,25 @@ class TestQuickReplyMessage:
 
         assert payload["header"]["text"] == "Important"
         assert payload["footer"] == "Tap to select"
+
+
+class TestCatalogMessage:
+    """Tests for Catalog message."""
+
+    def test_format_basic(self):
+        """Test basic Catalog."""
+        msg = Catalog(text="Browse our products")
+        payload = msg.format_message()
+
+        assert payload["text"] == "Browse our products"
+        assert payload["interaction_type"] == "catalog"
+        assert "thumbnail_product_retailer_id" not in payload
+
+    def test_format_with_thumbnail(self):
+        """Test Catalog with thumbnail product."""
+        msg = Catalog(text="Browse our products", thumbnail_product_retailer_id="PRODUCT-123")
+        payload = msg.format_message()
+
+        assert payload["text"] == "Browse our products"
+        assert payload["interaction_type"] == "catalog"
+        assert payload["thumbnail_product_retailer_id"] == "PRODUCT-123"
