@@ -32,21 +32,6 @@ class Component:
         """Get the format example for the component."""
         return cls._format_example
 
-    @staticmethod
-    def get_messages() -> list[dict[str, Any]]:
-        """
-        Get all broadcast messages dispatched during this tool execution.
-
-        Collects messages registered via Broadcast.send() and returns them
-        so they can be included in the response to Nexus.
-
-        Returns:
-            List of broadcast message payloads.
-        """
-        from weni.broadcasts.broadcast import Broadcast
-
-        return Broadcast.get_broadcasts()
-
 
 class Text(Component):
     _format_example = {"text": "Hello, how can I help you today?"}

@@ -6,7 +6,6 @@ from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
 
-
 class Tool:
     """
     Base class for implementing tools.
@@ -43,21 +42,17 @@ class Tool:
     4. The tool returns a Response with the result data and display components
     """
 
+    _peding_broadcasts: list[dict[str, Any]] = []
+
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         # Ensure we only return events from this execution
         Event.registry.clear()
-
-        try:
-            Broadcast.configure(context)
-        except Exception:
-            pass
-
+        instance._pending_broadcasts = []
+        instance.context = context
         execute_result = instance.execute(context)
         events = Event.get_events()
-
-        from weni.components.component import Component
-        broadcasts = Component.get_messages()
+        broadcasts = instance._pending_broadcasts
 
         if isinstance(execute_result, FinalResponse):
             result = execute_result.to_dict()
@@ -108,3 +103,6 @@ class Tool:
             ```
         """
         return TextResponse(data={})  # type: ignore
+
+    def register_broadcast(self, broadcast: dict[str, Any]) -> None:
+        self._pending_broadcasts.append(broadcast)
