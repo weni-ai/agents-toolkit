@@ -17,7 +17,7 @@ Example:
     ```
 """
 
-from weni.broadcasts.broadcast import Broadcast, BroadcastEvent
+from weni.broadcasts.broadcast import Broadcast
 from weni.broadcasts.messages import (
     Catalog,
     Message,
@@ -33,7 +33,6 @@ from weni.broadcasts.sender import (
 __all__ = [
     # Main classes
     "Broadcast",
-    "BroadcastEvent",
     "BroadcastSender",
     # Exceptions
     "BroadcastSenderError",
