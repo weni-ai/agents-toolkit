@@ -2,219 +2,11 @@
 Tests for Broadcast class.
 """
 
-import threading
-from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock, patch
 
-from weni.broadcasts.broadcast import Broadcast, BroadcastEvent, _sender_var
+from weni.broadcasts.broadcast import Broadcast
 from weni.broadcasts.messages import Text
 from weni.context import Context
-
-
-class TestBroadcastEvent:
-    """Tests for BroadcastEvent registry."""
-
-    def setup_method(self):
-        """Clear pending messages before each test."""
-        BroadcastEvent.clear()
-
-    def test_register_message(self):
-        """Test registering a message."""
-        msg = Text(text="Hello")
-        BroadcastEvent.register(msg)
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Hello"
-
-    def test_register_multiple_messages(self):
-        """Test registering multiple messages."""
-        BroadcastEvent.register(Text(text="First"))
-        BroadcastEvent.register(Text(text="Second"))
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 2
-
-    def test_clear_messages(self):
-        """Test clearing pending messages."""
-        BroadcastEvent.register(Text(text="Hello"))
-        BroadcastEvent.clear()
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 0
-
-    def test_get_pending_returns_copy(self):
-        """Test that get_pending returns a copy."""
-        BroadcastEvent.register(Text(text="Hello"))
-        pending = BroadcastEvent.get_pending()
-        pending.clear()
-
-        # Original should still have the message
-        assert len(BroadcastEvent.get_pending()) == 1
-
-    def test_pop_pending_returns_and_clears(self):
-        """Test that pop_pending returns messages and clears them."""
-        BroadcastEvent.register(Text(text="First"))
-        BroadcastEvent.register(Text(text="Second"))
-
-        # Pop should return all messages
-        popped = BroadcastEvent.pop_pending()
-        assert len(popped) == 2
-        assert popped[0]["text"] == "First"
-        assert popped[1]["text"] == "Second"
-
-        # Should be empty now
-        assert len(BroadcastEvent.get_pending()) == 0
-
-    def test_pop_pending_returns_copy(self):
-        """Test that pop_pending returns a copy that can be modified safely."""
-        BroadcastEvent.register(Text(text="Hello"))
-        popped = BroadcastEvent.pop_pending()
-
-        # Modifying returned list shouldn't affect internal state
-        popped.append({"text": "Should not appear"})
-
-        # Register a new message
-        BroadcastEvent.register(Text(text="New"))
-        pending = BroadcastEvent.get_pending()
-
-        assert len(pending) == 1
-        assert pending[0]["text"] == "New"
-
-
-class TestBroadcastEventScope:
-    """Tests for BroadcastEvent.scope() context manager."""
-
-    def setup_method(self):
-        """Clear pending messages before each test."""
-        BroadcastEvent.clear()
-
-    def test_scope_provides_isolation(self):
-        """Test that scope provides isolation for messages."""
-        # Register a message outside any scope
-        BroadcastEvent.register(Text(text="Outside"))
-
-        with BroadcastEvent.scope():
-            # Inside scope should start empty
-            assert len(BroadcastEvent.get_pending()) == 0
-
-            # Register messages inside scope
-            BroadcastEvent.register(Text(text="Inside"))
-            assert len(BroadcastEvent.get_pending()) == 1
-
-        # After scope, should be back to original state
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Outside"
-
-        # Cleanup
-        BroadcastEvent.clear()
-
-    def test_nested_scopes(self):
-        """Test that nested scopes work correctly."""
-        BroadcastEvent.register(Text(text="Level 0"))
-
-        with BroadcastEvent.scope():
-            BroadcastEvent.register(Text(text="Level 1"))
-            assert len(BroadcastEvent.get_pending()) == 1
-
-            with BroadcastEvent.scope():
-                BroadcastEvent.register(Text(text="Level 2"))
-                assert len(BroadcastEvent.get_pending()) == 1
-                assert BroadcastEvent.get_pending()[0]["text"] == "Level 2"
-
-            # Back to level 1
-            assert len(BroadcastEvent.get_pending()) == 1
-            assert BroadcastEvent.get_pending()[0]["text"] == "Level 1"
-
-        # Back to level 0
-        assert len(BroadcastEvent.get_pending()) == 1
-        assert BroadcastEvent.get_pending()[0]["text"] == "Level 0"
-
-        # Cleanup
-        BroadcastEvent.clear()
-
-    def test_scope_clears_on_exception(self):
-        """Test that scope clears even when exception occurs."""
-        BroadcastEvent.register(Text(text="Before"))
-
-        try:
-            with BroadcastEvent.scope():
-                BroadcastEvent.register(Text(text="During"))
-                raise ValueError("Test exception")
-        except ValueError:
-            pass
-
-        # Should be back to original state
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Before"
-
-        # Cleanup
-        BroadcastEvent.clear()
-
-    def test_scope_isolation_between_threads(self):
-        """Test that scopes provide isolation between threads."""
-        results: dict[str, list[dict]] = {}
-        barrier = threading.Barrier(2)
-
-        def worker(name: str) -> None:
-            with BroadcastEvent.scope():
-                BroadcastEvent.register(Text(text=f"Message from {name}"))
-                # Synchronize to ensure both threads are running concurrently
-                barrier.wait()
-                # Each thread should only see its own message
-                results[name] = BroadcastEvent.get_pending()
-
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            future1 = executor.submit(worker, "thread1")
-            future2 = executor.submit(worker, "thread2")
-            future1.result()
-            future2.result()
-
-        # Each thread should have captured only its own message
-        assert len(results["thread1"]) == 1
-        assert results["thread1"][0]["text"] == "Message from thread1"
-        assert len(results["thread2"]) == 1
-        assert results["thread2"][0]["text"] == "Message from thread2"
-
-
-class TestBroadcast:
-    """Tests for Broadcast class."""
-
-    def setup_method(self):
-        """Clear pending messages before each test."""
-        BroadcastEvent.clear()
-
-    def test_send_text(self):
-        """Test sending a text message."""
-        Broadcast.send(Text(text="Hello!"))
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Hello!"
-        assert "type" not in pending[0]
-
-    def test_send_multiple(self):
-        """Test sending multiple messages."""
-        Broadcast.send(Text(text="Processing..."))
-        Broadcast.send(Text(text="Done!"))
-
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 2
-        assert pending[0]["text"] == "Processing..."
-        assert pending[1]["text"] == "Done!"
-
-    def test_send_within_scope(self):
-        """Test that send works correctly within a scope."""
-        with BroadcastEvent.scope():
-            Broadcast.send(Text(text="Scoped message"))
-            pending = BroadcastEvent.get_pending()
-            assert len(pending) == 1
-            assert pending[0]["text"] == "Scoped message"
-
-        # After scope, should be empty (or back to original state)
-        assert len(BroadcastEvent.get_pending()) == 0
 
 
 def create_context(
@@ -234,167 +26,100 @@ def create_context(
     )
 
 
-class TestBroadcastConfigure:
-    """Tests for Broadcast.configure()."""
+class TestBroadcast:
+    """Tests for Broadcast instance-based API."""
 
-    def setup_method(self):
-        """Clear state before each test."""
-        BroadcastEvent.clear()
-        _sender_var.set(None)
+    def test_broadcast_requires_tool(self):
+        """Test that Broadcast takes a tool instance."""
+        mock_tool = MagicMock()
+        mock_tool.context = create_context()
+        mock_tool._pending_broadcasts = []
 
-    def teardown_method(self):
-        """Clear state after each test."""
-        _sender_var.set(None)
+        broadcast = Broadcast(mock_tool)
+        assert broadcast._tool is mock_tool
 
     @patch("weni.broadcasts.sender.BroadcastSender")
-    def test_configure_creates_sender(self, mock_sender_class):
-        """Test that configure creates a BroadcastSender."""
+    def test_send_registers_and_sends(self, mock_sender_class):
+        """Test that send registers the message on the tool and sends via HTTP."""
+        mock_sender = MagicMock()
+        mock_sender.send.return_value = {"id": 1}
+        mock_sender_class.return_value = mock_sender
+
+        mock_tool = MagicMock()
+        mock_tool.context = create_context(project={"auth_token": "tk"})
+        mock_tool._pending_broadcasts = []
+
+        with patch.object(Broadcast, '_get_sender', return_value=mock_sender):
+            broadcast = Broadcast(mock_tool)
+            broadcast.send(Text(text="Hello!"))
+
+        mock_tool.register_broadcast.assert_called_once_with({"text": "Hello!"})
+        mock_sender.send.assert_called_once_with({"text": "Hello!"})
+
+    @patch("weni.broadcasts.sender.BroadcastSender")
+    def test_send_many_registers_all_and_sends_batch(self, mock_sender_class):
+        """Test that send_many registers all messages and sends as batch."""
         mock_sender = MagicMock()
         mock_sender_class.return_value = mock_sender
 
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+        mock_tool = MagicMock()
+        mock_tool.context = create_context(project={"auth_token": "tk"})
+        mock_tool._pending_broadcasts = []
 
-        Broadcast.configure(context)
+        with patch.object(Broadcast, '_get_sender', return_value=mock_sender):
+            broadcast = Broadcast(mock_tool)
+            broadcast.send_many([Text(text="Msg 1"), Text(text="Msg 2")])
 
-        mock_sender_class.assert_called_once_with(context)
-        assert Broadcast._get_sender() == mock_sender
-
-    @patch("weni.broadcasts.sender.BroadcastSender")
-    def test_configure_can_be_called_multiple_times(self, mock_sender_class):
-        """Test that configure can be called multiple times."""
-        mock_sender1 = MagicMock()
-        mock_sender2 = MagicMock()
-        mock_sender_class.side_effect = [mock_sender1, mock_sender2]
-
-        context1 = create_context(project={"sqs_queue_url": "https://sqs/q1", "flows_url": "https://f1"})
-        context2 = create_context(project={"sqs_queue_url": "https://sqs/q2", "flows_url": "https://f2"})
-
-        Broadcast.configure(context1)
-        assert Broadcast._get_sender() == mock_sender1
-
-        Broadcast.configure(context2)
-        assert Broadcast._get_sender() == mock_sender2
-
-
-class TestBroadcastWithSQS:
-    """Tests for Broadcast.send() with SQS integration."""
-
-    def setup_method(self):
-        """Clear state before each test."""
-        BroadcastEvent.clear()
-        _sender_var.set(None)
-
-    def teardown_method(self):
-        """Clear state after each test."""
-        _sender_var.set(None)
-
-    def test_send_without_configure_only_registers(self):
-        """Test that send without configure only registers message."""
-        Broadcast.send(Text(text="Hello"))
-
-        # Message should be registered
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-        assert pending[0]["text"] == "Hello"
-
-        # No sender configured, so no SQS call
-        assert Broadcast._get_sender() is None
-
-    @patch("weni.broadcasts.sender.BroadcastSender")
-    def test_send_with_configure_sends_to_sqs(self, mock_sender_class):
-        """Test that send with configure sends to SQS."""
-        mock_sender = MagicMock()
-        mock_sender_class.return_value = mock_sender
-
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        Broadcast.configure(context)
-        Broadcast.send(Text(text="Hello SQS!"))
-
-        # Message should be registered
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 1
-
-        # Sender should have been called
-        mock_sender.send.assert_called_once()
-        call_args = mock_sender.send.call_args
-        assert call_args[0][0]["text"] == "Hello SQS!"
-
-    @patch("weni.broadcasts.sender.BroadcastSender")
-    def test_send_many_sends_batch(self, mock_sender_class):
-        """Test that send_many uses batch send."""
-        mock_sender = MagicMock()
-        mock_sender_class.return_value = mock_sender
-
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
-
-        Broadcast.configure(context)
-        Broadcast.send_many([
-            Text(text="Message 1"),
-            Text(text="Message 2"),
-            Text(text="Message 3"),
-        ])
-
-        # Messages should be registered
-        pending = BroadcastEvent.get_pending()
-        assert len(pending) == 3
-
-        # Sender should have been called with batch
+        assert mock_tool.register_broadcast.call_count == 2
         mock_sender.send_batch.assert_called_once()
-        call_args = mock_sender.send_batch.call_args
-        payloads = call_args[0][0]
-        assert len(payloads) == 3
-        assert payloads[0]["text"] == "Message 1"
-        assert payloads[1]["text"] == "Message 2"
-        assert payloads[2]["text"] == "Message 3"
+        payloads = mock_sender.send_batch.call_args[0][0]
+        assert len(payloads) == 2
+        assert payloads[0]["text"] == "Msg 1"
+        assert payloads[1]["text"] == "Msg 2"
 
-    @patch("weni.broadcasts.sender.BroadcastSender")
-    def test_send_many_empty_list(self, mock_sender_class):
-        """Test send_many with empty list does nothing."""
-        mock_sender = MagicMock()
-        mock_sender_class.return_value = mock_sender
+    def test_send_many_empty_does_nothing(self):
+        """Test that send_many with empty list does nothing."""
+        mock_tool = MagicMock()
+        mock_tool.context = create_context()
+        mock_tool._pending_broadcasts = []
 
-        context = create_context(
-            project={
-                "sqs_queue_url": "https://sqs/queue",
-                "flows_url": "https://flows.weni.ai",
-            }
-        )
+        broadcast = Broadcast(mock_tool)
+        broadcast.send_many([])
 
-        Broadcast.configure(context)
-        Broadcast.send_many([])
+        mock_tool.register_broadcast.assert_not_called()
 
-        # No messages registered
-        assert len(BroadcastEvent.get_pending()) == 0
 
-        # Sender batch not called
-        mock_sender.send_batch.assert_not_called()
+class TestBroadcastIsolation:
+    """Tests that broadcasts are isolated per tool execution."""
 
-    def test_flush_returns_and_clears(self):
-        """Test that flush returns and clears messages."""
-        Broadcast.send(Text(text="Message 1"))
-        Broadcast.send(Text(text="Message 2"))
+    def test_register_broadcast_appends(self):
+        """Test that register_broadcast appends to the tool's list."""
+        from weni.tool import Tool
 
-        flushed = Broadcast.flush()
+        mock_instance = object.__new__(Tool)
+        mock_instance._pending_broadcasts = []
 
-        assert len(flushed) == 2
-        assert flushed[0]["text"] == "Message 1"
-        assert flushed[1]["text"] == "Message 2"
+        mock_instance.register_broadcast({"text": "Hello"})
+        mock_instance.register_broadcast({"text": "World"})
 
-        # Should be empty now
-        assert len(BroadcastEvent.get_pending()) == 0
+        assert len(mock_instance._pending_broadcasts) == 2
+        assert mock_instance._pending_broadcasts[0]["text"] == "Hello"
+        assert mock_instance._pending_broadcasts[1]["text"] == "World"
+
+    def test_separate_tools_have_separate_broadcasts(self):
+        """Test that two tool instances don't share broadcasts."""
+        from weni.tool import Tool
+
+        tool1 = object.__new__(Tool)
+        tool1._pending_broadcasts = []
+
+        tool2 = object.__new__(Tool)
+        tool2._pending_broadcasts = []
+
+        tool1.register_broadcast({"text": "From tool 1"})
+        tool2.register_broadcast({"text": "From tool 2"})
+
+        assert len(tool1._pending_broadcasts) == 1
+        assert tool1._pending_broadcasts[0]["text"] == "From tool 1"
+        assert len(tool2._pending_broadcasts) == 1
+        assert tool2._pending_broadcasts[0]["text"] == "From tool 2"
