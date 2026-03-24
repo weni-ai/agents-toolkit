@@ -5,15 +5,13 @@ This provides the foundation for sending WhatsApp messages
 during tool execution via the Flows WhatsApp Broadcasts API.
 """
 
-from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import TYPE_CHECKING, Generator
+from typing import TYPE_CHECKING
 
 from weni.broadcasts.messages import Message
 
 if TYPE_CHECKING:
     from weni.broadcasts.sender import BroadcastSender
-    from weni.context import Context
     from weni.tool import Tool
 
 # Context variable for storing pending messages per execution context.
