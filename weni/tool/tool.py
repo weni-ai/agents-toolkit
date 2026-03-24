@@ -35,14 +35,14 @@ class Tool:
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        result = {"result": result, "messages": broadcasts}
+        result = {"result": result, "messages_sent": broadcasts}
 
         traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
             if instance._tracer_initialized:
                 traces = instance._get_trace_summary()
 
-        return result, format, events, traces, broadcasts
+        return result, format, events, traces
 
     def execute(self, context: Context) -> ResponseObject:
         """
