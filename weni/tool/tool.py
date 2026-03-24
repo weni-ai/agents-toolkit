@@ -21,6 +21,9 @@ class Tool:
         ```
     """
 
+    _pending_broadcasts: list[dict[str, Any]]
+    context: Context
+
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         Event.registry.clear()

@@ -55,6 +55,7 @@ class Broadcast:
         self._tool = tool
 
     def _get_sender(self) -> "BroadcastSender":
+        from weni.broadcasts.sender import BroadcastSender
         return BroadcastSender(self._tool.context)
 
     def send(self, message: Message) -> None:
