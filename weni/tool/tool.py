@@ -15,9 +15,21 @@ class Tool:
     Example:
         ```python
         class GetWeather(Tool):
-            def execute(self, context: Context) -> ResponseObject:
-                weather_data = get_weather(context.parameters.get("city"))
-                return TextResponse(data=weather_data)
+            def execute(self, context: Context) -> Response:
+                # Get API key from credentials
+                api_key = context.credentials.get("weather_api_key")
+
+                # Get city from parameters
+                city = context.parameters.get("city")
+
+                # Call weather API and get results
+                weather_data = get_weather(api_key, city)
+
+                # Return response with weather data and components to display it
+                return Response(
+                    data=weather_data,
+                    components=[Text, QuickReplies]
+                )
         ```
     
     The tool execution flow is:
