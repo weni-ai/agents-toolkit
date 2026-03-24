@@ -35,7 +35,7 @@ class Tool:
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        format["messages"] = broadcasts
+        result = {"result": result, "messages": broadcasts}
 
         traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
