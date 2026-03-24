@@ -12,32 +12,33 @@ from weni.responses import FinalResponse
 
 class MyTool(Tool):
     def execute(self, context: Context):
-        Broadcast.send(Text(text="Processing your request..."))
-        result = do_work()
+        Broadcast(self).send(Text(text="Processing your request..."))
         return FinalResponse()
 ```
 
-No manual configuration needed. `Tool.__new__()` automatically configures the broadcast sender using the execution context.
+`Broadcast(self)` receives the tool instance, which provides the execution context and broadcast isolation between Lambda invocations.
 
 ## How It Works
 
 ```
-   Tool Lambda                          Flows API                WhatsApp
-   ───────────                          ─────────                ────────
-   Broadcast.send(Text("Hello"))
+   Tool.execute()                        Flows API                WhatsApp
+   ──────────────                        ─────────                ────────
+   Broadcast(self).send(Text("Hello"))
+        │
+        ├── register on tool._pending_broadcasts
         │
         ▼
    BroadcastSender
    POST /api/v2/whatsapp_broadcasts.json ──────► Creates Broadcast
-        │                                              │
-        │                                              ▼
-        │                                        Mailroom/Courier
-        │                                              │
-        ▼                                              ▼
-   return FinalResponse()                     Message delivered
+                                                       │
+                                                       ▼
+                                                 Mailroom/Courier
+                                                       │
+                                                       ▼
+   return FinalResponse()                      Message delivered
 ```
 
-1. `Broadcast.send()` makes an HTTP POST to the Flows WhatsApp Broadcasts API
+1. `Broadcast(self).send()` registers the message on the tool and POSTs to the Flows API
 2. Flows creates the broadcast and queues it via Mailroom
 3. Courier delivers the message to the contact via WhatsApp
 
@@ -48,9 +49,7 @@ No manual configuration needed. `Tool.__new__()` automatically configures the br
 Simple text message.
 
 ```python
-from weni.broadcasts import Text
-
-Broadcast.send(Text(text="Hello! How can I help you?"))
+Broadcast(self).send(Text(text="Hello! How can I help you?"))
 ```
 
 ### QuickReply
@@ -60,7 +59,7 @@ Message with quick reply buttons.
 ```python
 from weni.broadcasts import QuickReply
 
-Broadcast.send(QuickReply(
+Broadcast(self).send(QuickReply(
     text="Do you want to continue?",
     options=["Yes", "No", "Maybe"],
     header="Question",   # optional
@@ -71,7 +70,7 @@ Broadcast.send(QuickReply(
 ## Sending Multiple Messages
 
 ```python
-Broadcast.send_many([
+Broadcast(self).send_many([
     Text(text="Step 1: Processing..."),
     Text(text="Step 2: Complete!"),
 ])
@@ -79,18 +78,18 @@ Broadcast.send_many([
 
 ## Configuration
 
-The sender reads configuration from the Context automatically:
+The sender reads configuration from the execution context automatically:
 
-| Config | Source | Description |
-|--------|--------|-------------|
-| `auth_token` | `context.project` | Bearer token for Flows API |
-| `flows_url` | context or `FLOWS_BASE_URL` env var | Flows API base URL |
-| `channel_uuid` | context (project/credentials/contact) | WhatsApp channel UUID |
-| Contact URN | `contact.urns` > `contact.urn` > `parameters.contact_urn` | Recipient URN |
+| Config | Source priority | Description |
+|--------|----------------|-------------|
+| `auth_token` | `project` | `Authorization: Bearer` header |
+| `flows_url` | project / credentials / contact / globals / env `FLOWS_BASE_URL` | Flows API base URL |
+| `channel_uuid` | project / credentials / contact / globals / env | WhatsApp channel UUID |
+| Contact URN | `contact.urns` > `contact.urn` > `parameters.contact_urn` | Message recipient |
 
-### Config Resolution Priority
+## Isolation
 
-`project > credentials > contact > globals > environment variables`
+Each tool execution gets its own `_pending_broadcasts` list. The `Broadcast` class receives `self` (the tool instance), so broadcasts from one Lambda invocation never leak into another, even on warm starts.
 
 ## Response Types
 
@@ -99,22 +98,22 @@ The sender reads configuration from the Context automatically:
 ```python
 class MyTool(Tool):
     def execute(self, context: Context):
-        Broadcast.send(Text(text="Hello!"))
+        Broadcast(self).send(Text(text="Hello!"))
         return FinalResponse()
-# Result: {"is_final_output": true, "messages": [{"text": "Hello!"}]}
 ```
 
 ### With TextResponse (or any other Response)
 
-Broadcasts are automatically included in the result when present:
+Broadcasts are included in the result automatically:
 
 ```python
 class MyTool(Tool):
     def execute(self, context: Context):
-        Broadcast.send(Text(text="Processing..."))
+        Broadcast(self).send(Text(text="Processing..."))
         return TextResponse(data="done")
-# Result: {"result": "done", "messages": [{"text": "Processing..."}]}
 ```
+
+In both cases, `Tool.__new__()` wraps the result as `{"result": <data>, "messages_sent": [<broadcasts>]}`.
 
 ## Error Handling
 
@@ -122,14 +121,12 @@ class MyTool(Tool):
 from weni.broadcasts import BroadcastSenderError, BroadcastSenderConfigError
 
 try:
-    Broadcast.send(Text(text="Hello!"))
+    Broadcast(self).send(Text(text="Hello!"))
 except BroadcastSenderConfigError as e:
     print(f"Configuration error: {e}")
 except BroadcastSenderError as e:
     print(f"Send error: {e}")
 ```
-
-If the sender is not configured (e.g., missing credentials), `Broadcast.send()` silently registers the message without sending. The tool continues to work normally.
 
 ## Test Definition
 
@@ -141,7 +138,7 @@ tests:
         parameters:
             text: "Hello from broadcast"
         project:
-            auth_token: "your-token-here"
+            auth_token: "your-jwt-token"
         contact:
             urn: "whatsapp:5584988242399"
             channel_uuid: "your-channel-uuid"
