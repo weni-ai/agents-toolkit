@@ -133,55 +133,12 @@ def test_order_details_component_format_example():
     assert "order" in result["order_details"]
 
 
-class TestComponentGetMessages:
-    def test_get_messages_returns_broadcasts(self):
-        from weni.broadcasts.broadcast import BroadcastEvent
-
-        BroadcastEvent.clear()
-        BroadcastEvent._get_messages().append({"text": "Hello"})
-        BroadcastEvent._get_messages().append({"text": "World"})
-
-        messages = Component.get_messages()
-        assert messages == [{"text": "Hello"}, {"text": "World"}]
-
-        BroadcastEvent.clear()
-
-    def test_get_messages_empty(self):
-        from weni.broadcasts.broadcast import BroadcastEvent
-
-        BroadcastEvent.clear()
-        assert Component.get_messages() == []
-
-
 class TestFinalResponse:
-    def test_default_no_broadcasts(self):
-        from weni.broadcasts.broadcast import BroadcastEvent
+    def test_returns_response_tuple(self):
+        result, format = FinalResponse()
+        assert result == {"is_final_output": True}
+        assert format == {"msg": {}}
 
-        BroadcastEvent.clear()
-        response = FinalResponse()
-        assert response.broadcasts == []
-
-    def test_to_dict_always_final(self):
-        from weni.broadcasts.broadcast import BroadcastEvent
-
-        BroadcastEvent.clear()
-        result = FinalResponse().to_dict()
-        assert result == {"is_final_output": True, "messages": []}
-
-    def test_broadcasts_from_component_get_messages(self):
-        from weni.broadcasts.broadcast import BroadcastEvent
-
-        BroadcastEvent.clear()
-        BroadcastEvent._get_messages().append({"text": "auto-collected"})
-
-        response = FinalResponse()
-        assert response.broadcasts == [{"text": "auto-collected"}]
-        assert response.to_dict() == {
-            "is_final_output": True,
-            "messages": [{"text": "auto-collected"}],
-        }
-
-        BroadcastEvent.clear()
-
-    def test_is_not_a_component_subclass(self):
-        assert not issubclass(FinalResponse, Component)
+    def test_is_a_response_subclass(self):
+        from weni.responses import Response
+        assert issubclass(FinalResponse, Response)

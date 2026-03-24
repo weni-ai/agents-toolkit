@@ -1,77 +1,42 @@
 from typing import Any
 
-from weni.broadcasts.broadcast import Broadcast
-from weni.responses.responses import FinalResponse
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
+
 
 class Tool:
     """
     Base class for implementing tools.
 
-    A tool represents a specific capability or functionality that can be executed within the platform.
-    Tools receive a Context object containing credentials, parameters and global variables, and must
-    return a Response object with the execution result and the components that should be used to
-    display it.
+    Tools receive a Context object and must return a Response (tuple of data and format).
+    Broadcasts are registered via Broadcast(self).send() and collected automatically.
 
     Example:
         ```python
         class GetWeather(Tool):
-            def execute(self, context: Context) -> Response:
-                # Get API key from credentials
-                api_key = context.credentials.get("weather_api_key")
-
-                # Get city from parameters
-                city = context.parameters.get("city")
-
-                # Call weather API and get results
-                weather_data = get_weather(api_key, city)
-
-                # Return response with weather data and components to display it
-                return Response(
-                    data=weather_data,
-                    components=[Text, QuickReplies]
-                )
+            def execute(self, context: Context) -> ResponseObject:
+                weather_data = get_weather(context.parameters.get("city"))
+                return TextResponse(data=weather_data)
         ```
-
-    The tool execution flow is:
-    1. The tool receives a Context object with credentials, parameters and globals
-    2. The execute() method is called with the context
-    3. The tool performs its business logic using the context data
-    4. The tool returns a Response with the result data and display components
     """
-
-    _peding_broadcasts: list[dict[str, Any]] = []
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        # Ensure we only return events from this execution
         Event.registry.clear()
         instance._pending_broadcasts = []
         instance.context = context
+
         execute_result = instance.execute(context)
         events = Event.get_events()
         broadcasts = instance._pending_broadcasts
 
-        if isinstance(execute_result, FinalResponse):
-            result = execute_result.to_dict()
-            format: dict[str, Any] = {}
-        else:
-            result, format = execute_result
-            format["messages"] = broadcasts
-            if not isinstance(format, dict):
-                raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
-            if isinstance(result, FinalResponse):
-                result = result.to_dict()
-            elif broadcasts:
-                if isinstance(result, dict):
-                    result["messages"] = broadcasts
-                else:
-                    result = {"result": result, "messages": broadcasts}
+        result, format = execute_result
+        if not isinstance(format, dict):
+            raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        # Always returns traces. If the instance inherits from Traced and the trace is initialized,
-        # retrieves the traces. Otherwise, returns an empty dictionary.
+        format["messages"] = broadcasts
+
         traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
             if instance._tracer_initialized:
@@ -83,25 +48,7 @@ class Tool:
         """
         Execute the tool's main functionality.
 
-        This method should be overridden by subclasses to implement the tool's
-        specific behavior. The default implementation returns an empty TextResponse.
-
-        Args:
-            context (Context): Immutable context containing credentials, parameters,
-                            and global variables
-
-        Returns:
-            Response: A Response object containing the execution results and
-                    display components
-
-        Example:
-            ```python
-            def execute(self, context: Context) -> Response:
-                user_name = context.parameters.get("name", "Guest")
-                return TextResponse(data={
-                    "greeting": f"Hello {user_name}!"
-                })
-            ```
+        Override this method to implement the tool's behavior.
         """
         return TextResponse(data={})  # type: ignore
 
