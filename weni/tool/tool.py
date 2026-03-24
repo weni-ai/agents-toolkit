@@ -19,6 +19,12 @@ class Tool:
                 weather_data = get_weather(context.parameters.get("city"))
                 return TextResponse(data=weather_data)
         ```
+    
+    The tool execution flow is:
+    1. The tool receives a Context object with credentials, parameters and globals
+    2. The execute() method is called with the context
+    3. The tool performs its business logic using the context data
+    4. The tool returns a Response with the result data and display components
     """
 
     _pending_broadcasts: list[dict[str, Any]]
@@ -26,7 +32,6 @@ class Tool:
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        Event.registry.clear()
         instance._pending_broadcasts = []
         instance.context = context
 

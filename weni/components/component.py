@@ -9,10 +9,6 @@ class Component:
     that can be used to display tool responses. Component attributes are
     immutable class variables.
 
-    Also provides broadcast message collection via get_messages(), which
-    returns all broadcasts dispatched during the current tool execution.
-    This allows any component to carry broadcast context to Nexus.
-
     Class Attributes:
         _format_example (ClassVar[dict]): Expected JSON format for the component
     """
@@ -112,4 +108,3 @@ class OrderDetails(Component):
             },
         },
     }
-
