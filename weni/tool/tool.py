@@ -74,8 +74,8 @@ class Tool:
         """
         return TextResponse(data={})  # type: ignore
 
-    def send_broadcast(self, component: Message) -> None:
-        Broadcast(self).send(component)
+    def send_broadcast(self, message: Message) -> None:
+        Broadcast(self).send(message)
 
     def register_broadcast(self, broadcast: dict[str, Any]) -> None:
         self._pending_broadcasts.append(broadcast)
