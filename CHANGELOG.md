@@ -1,4 +1,8 @@
 # Changelog
+## [2.5.1] - 2026-03-25
+
+- feat: adding send_broadcast method to send broadcast with self inside tool
+
 ## [2.5.0] - 2026-03-25
 
 - feat: new version of flows broadcast integration
