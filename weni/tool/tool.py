@@ -1,5 +1,7 @@
 from typing import Any
 
+from weni.broadcasts.broadcast import Broadcast
+from weni.broadcasts.messages import Message
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
@@ -71,6 +73,9 @@ class Tool:
         Override this method to implement the tool's behavior.
         """
         return TextResponse(data={})  # type: ignore
+
+    def send_broadcast(self, message: Message) -> None:
+        Broadcast(self).send(message)
 
     def register_broadcast(self, broadcast: dict[str, Any]) -> None:
         self._pending_broadcasts.append(broadcast)
