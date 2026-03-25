@@ -257,3 +257,25 @@ class LocationResponse(Response):
 
     def __new__(cls, data: Any) -> ResponseObject:  # type: ignore
         return super().__new__(cls, data=data, components=[Text, Location])
+
+
+class FinalResponse(Response):
+    """
+    Signals the end of tool execution.
+
+    Returns is_final_output=True as data, with no display components.
+
+    Example:
+        ```python
+        from weni.broadcasts import Broadcast, Text
+        from weni.responses import FinalResponse
+
+        class MyTool(Tool):
+            def execute(self, context: Context):
+                Broadcast(self).send(Text(text="Processing your request..."))
+                return FinalResponse()
+        ```
+    """
+
+    def __new__(cls) -> ResponseObject:  # type: ignore
+        return super().__new__(cls, data={"is_final_output": True}, components=[])

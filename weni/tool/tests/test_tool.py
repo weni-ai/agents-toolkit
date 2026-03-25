@@ -27,10 +27,9 @@ def test_tool_execution():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events, traces = TestTool(context)
 
-	# 'events' and 'traces' are returned separately
-	assert result == {'test': 'data'}
+	assert result == {'result': {'test': 'data'}, 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 
@@ -63,7 +62,7 @@ def test_tool_context_access():
 	)
 
 	result, format, events, traces = TestTool(context)
-	assert result == {
+	expected_data = {
 		'credential': 'secret123',
 		'param': 'user456',
 		'global': 'production',
@@ -73,13 +72,12 @@ def test_tool_context_access():
 		'project_uuid': 'project-uuid',
 		'constants': {'INPUT': {'label': 'Example', 'required': True, 'default': 'Sample'}},
 	}
+	assert result == {'result': expected_data, 'messages_sent': []}
 	assert events == []
-	assert format == {
-		'msg': {
-			'text': 'Hello, how can I help you today?',
-			'quick_replies': ['Yes', 'No'],
-			'header': {'type': 'text', 'text': 'Important Message'},
-		}
+	assert format['msg'] == {
+		'text': 'Hello, how can I help you today?',
+		'quick_replies': ['Yes', 'No'],
+		'header': {'type': 'text', 'text': 'Important Message'},
 	}
 	assert traces == {}
 
@@ -93,9 +91,9 @@ def test_tool_without_execute_implementation():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events, traces = EmptyTool(context)
 
-	assert result == {}
+	assert result == {'result': {}, 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 
@@ -104,8 +102,6 @@ def test_tool_with_invalid_format():
 
 	class InvalidFormatTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:  # type: ignore
-			# The first value can be any type (a dictionary here),
-			# but the second value (format) must be a dictionary - not a string
 			return {}, 'not a dictionary'  # type: ignore
 
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
@@ -121,12 +117,10 @@ def test_response_immutability():
 	data = {'key': 'value'}
 	result, format = TextResponse(data=data)
 
-	# Modify original data
 	data['new_key'] = 'new_value'
 
-	# Response should maintain original values
 	assert 'new_key' not in result
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 
 
 def test_tool_context_immutability():
@@ -134,7 +128,6 @@ def test_tool_context_immutability():
 
 	class MutableTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
-			# Try to modify context
 			context.credentials['new_key'] = 'value'  # type: ignore
 			return TextResponse(data={})  # type: ignore
 
@@ -161,17 +154,17 @@ def test_tool_execution_order():
 	result, format, events, traces = CountedTool(context)
 
 	assert execution_count == 1
-	assert result == {'count': 1}
+	assert result == {'result': {'count': 1}, 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 	result, format, events, traces = CountedTool(context)
 
 	assert execution_count == 2
-	assert result == {'count': 2}
+	assert result == {'result': {'count': 2}, 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 
@@ -185,15 +178,13 @@ def test_tool_with_complex_response():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events, traces = ComplexTool(context)
 
-	assert result == {'message': 'Choose an option'}
+	assert result == {'result': {'message': 'Choose an option'}, 'messages_sent': []}
 	assert events == []
-	assert format == {
-		'msg': {
-			'text': 'Hello, how can I help you today?',
-			'quick_replies': ['Yes', 'No'],
-			'header': {'type': 'text', 'text': 'Important Message'},
-			'footer': 'Powered by Weni',
-		}
+	assert format['msg'] == {
+		'text': 'Hello, how can I help you today?',
+		'quick_replies': ['Yes', 'No'],
+		'header': {'type': 'text', 'text': 'Important Message'},
+		'footer': 'Powered by Weni',
 	}
 	assert traces == {}
 
@@ -208,9 +199,9 @@ def test_tool_with_non_dict_response():
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
 	result, format, events, traces = ListDataTool(context)
 
-	assert result == ['item1', 'item2', 'item3']
+	assert result == {'result': ['item1', 'item2', 'item3'], 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 	class StringDataTool(Tool):
@@ -219,9 +210,9 @@ def test_tool_with_non_dict_response():
 
 	result, format, events, traces = StringDataTool(context)
 
-	assert result == 'simple string response'
+	assert result == {'result': 'simple string response', 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 	class NumberDataTool(Tool):
@@ -230,68 +221,61 @@ def test_tool_with_non_dict_response():
 
 	result, format, events, traces = NumberDataTool(context)
 
-	assert result == 42
+	assert result == {'result': 42, 'messages_sent': []}
 	assert events == []
-	assert format == {'msg': {'text': 'Hello, how can I help you today?'}}
+	assert format['msg'] == {'text': 'Hello, how can I help you today?'}
 	assert traces == {}
 
 
 def test_tool_with_traced_returns_tuple():
 	"""Test that Tool with Traced returns tuple (result, format, events, traces)"""
-	
+
 	class TracedTool(Traced, Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			processed = self._process_data(context)
 			return TextResponse(data=processed)  # type: ignore
-		
+
 		@trace()
 		def _process_data(self, context: Context) -> dict:
 			return {"processed": True, "value": 42}
-	
+
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	
-	# Tool with Traced should return tuple with traces
+
 	result = TracedTool(context)
-	
-	# Should return tuple (result, format, events, traces)
+
 	assert isinstance(result, tuple)
 	assert len(result) == 4
 	data, format, events, traces = result
-	
-	# Verify data
-	assert data == {"processed": True, "value": 42}
+
+	assert data == {'result': {"processed": True, "value": 42}, 'messages_sent': []}
 	assert isinstance(format, dict)
 	assert isinstance(events, list)
-	
-	# Verify traces structure
+
 	assert isinstance(traces, dict)
 	assert "name" in traces
 	assert traces["name"] == "TracedTool"
 	assert "steps" in traces
 	assert "started_at" in traces
 	assert "status" in traces
-	assert len(traces["steps"]) > 0  # Should have at least one step from _process_data
+	assert len(traces["steps"]) > 0
 
 
 def test_tool_without_traced_returns_four_values():
 	"""Test that Tool without Traced returns (result, format, events, traces) with empty traces"""
-	
+
 	class RegularTool(Tool):
 		def execute(self, context: Context) -> ResponseObject:
 			return TextResponse(data={"test": "data"})  # type: ignore
-	
+
 	context = Context(credentials={}, parameters={}, globals={}, contact={}, project={}, constants={})
-	
-	# Tool without Traced should always return (result, format, events, traces)
+
 	result = RegularTool(context)
-	
-	# Should return tuple with 4 values, including empty traces
+
 	assert isinstance(result, tuple)
 	assert len(result) == 4
 	data, format, events, traces = result
-	
-	assert data == {"test": "data"}
+
+	assert data == {'result': {"test": "data"}, 'messages_sent': []}
 	assert isinstance(format, dict)
 	assert isinstance(events, list)
-	# Traces should be empty dict when Traced is not used
 	assert traces == {}

@@ -1,3 +1,5 @@
+from typing import Any
+
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
@@ -7,10 +9,8 @@ class Tool:
     """
     Base class for implementing tools.
 
-    A tool represents a specific capability or functionality that can be executed within the platform.
-    Tools receive a Context object containing credentials, parameters and global variables, and must
-    return a Response object with the execution result and the components that should be used to
-    display it.
+    Tools receive a Context object and must return a Response (tuple of data and format).
+    Broadcasts are registered via Broadcast(self).send() and collected automatically.
 
     Example:
         ```python
@@ -31,7 +31,7 @@ class Tool:
                     components=[Text, QuickReplies]
                 )
         ```
-
+    
     The tool execution flow is:
     1. The tool receives a Context object with credentials, parameters and globals
     2. The execute() method is called with the context
@@ -39,16 +39,24 @@ class Tool:
     4. The tool returns a Response with the result data and display components
     """
 
+    _pending_broadcasts: list[dict[str, Any]]
+    context: Context
+
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        result, format = instance.execute(context)
-        events = Event.get_events()
+        instance._pending_broadcasts = []
+        instance.context = context
 
+        execute_result = instance.execute(context)
+        events = Event.get_events()
+        broadcasts = instance._pending_broadcasts
+
+        result, format = execute_result
         if not isinstance(format, dict):
             raise TypeError(f"Execute method must return a dictionary, got {type(format)}")
 
-        # Always returns traces. If the instance inherits from Traced and the trace is initialized,
-        # retrieves the traces. Otherwise, returns an empty dictionary.
+        result = {"result": result, "messages_sent": broadcasts}
+
         traces = {}
         if hasattr(instance, '_get_trace_summary') and hasattr(instance, '_tracer_initialized'):
             if instance._tracer_initialized:
@@ -60,24 +68,9 @@ class Tool:
         """
         Execute the tool's main functionality.
 
-        This method should be overridden by subclasses to implement the tool's
-        specific behavior. The default implementation returns an empty TextResponse.
-
-        Args:
-            context (Context): Immutable context containing credentials, parameters,
-                            and global variables
-
-        Returns:
-            Response: A Response object containing the execution results and
-                    display components
-
-        Example:
-            ```python
-            def execute(self, context: Context) -> Response:
-                user_name = context.parameters.get("name", "Guest")
-                return TextResponse(data={
-                    "greeting": f"Hello {user_name}!"
-                })
-            ```
+        Override this method to implement the tool's behavior.
         """
         return TextResponse(data={})  # type: ignore
+
+    def register_broadcast(self, broadcast: dict[str, Any]) -> None:
+        self._pending_broadcasts.append(broadcast)

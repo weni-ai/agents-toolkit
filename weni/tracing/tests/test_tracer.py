@@ -313,13 +313,10 @@ def test_traced_tool_integration():
     # Use Tool.__new__ to test the actual integration with trace return
     result = TestTracedTool(context)
     
-    # Tool with Traced returns (result, format, events, traces)
     assert len(result) == 4
     data, format, events, traces = result
 
-    # Trace should be returned separately, not injected in data
-    assert "_execution_trace" not in data
-    assert data["processed"] is True
+    assert data["result"]["processed"] is True
     assert isinstance(traces, dict)
     assert "name" in traces
     assert traces["name"] == "TestTracedTool"

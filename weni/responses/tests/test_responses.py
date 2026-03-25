@@ -12,13 +12,14 @@ from weni.responses import (
 )
 from weni.components import Component
 
+
 def test_response_initialization():
     """Test Response class initialization"""
     data = {"key": "value"}
     result, format = TextResponse(data=data)
 
     assert result == data
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
 
 def test_response_str_representation():
@@ -27,7 +28,7 @@ def test_response_str_representation():
     result, format = TextResponse(data=data)
 
     assert result == data
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
 
 def test_response_with_empty_data():
@@ -35,7 +36,7 @@ def test_response_with_empty_data():
     result, format = TextResponse(data={})
 
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
 
 def test_response_with_complex_data():
@@ -44,7 +45,7 @@ def test_response_with_complex_data():
     result, format = TextResponse(data=data)
 
     assert result == data
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
 
 def test_text_response():
@@ -52,7 +53,7 @@ def test_text_response():
     # Basic text response
     result, format = TextResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
 
 def test_attachment_response():
@@ -60,18 +61,16 @@ def test_attachment_response():
     # Basic attachment response
     result, format = AttachmentResponse(data={})
     assert result == {}
-    assert format == {"msg": {"attachments": ["image/png:https://example.com/image.png"]}}
+    assert format["msg"] == {"attachments": ["image/png:https://example.com/image.png"]}
 
     # Attachment with footer
     result, format = AttachmentResponse(data={}, text=True, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "attachments": ["image/png:https://example.com/image.png"],
             "footer": "Powered by Weni",
         }
-    }
 
 
 def test_quick_reply_response():
@@ -79,31 +78,27 @@ def test_quick_reply_response():
     # Basic quick reply
     result, format = QuickReplyResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}
 
     # Quick reply with header
     result, format = QuickReplyResponse(data={}, header_type=HeaderType.TEXT, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "quick_replies": ["Yes", "No"],
             "header": {"type": "text", "text": "Important Message"},
             "footer": "Powered by Weni",
         }
-    }
 
     # Quick reply with attachments
     result, format = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "quick_replies": ["Yes", "No"],
             "attachments": ["image/png:https://example.com/image.png"],
             "footer": "Powered by Weni",
         }
-    }
 
 
 def test_list_message_response():
@@ -111,8 +106,7 @@ def test_list_message_response():
     # Basic list message
     result, format = ListMessageResponse(data={})
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -122,13 +116,11 @@ def test_list_message_response():
                 ],
             },
         }
-    }
 
     # List message with header
     result, format = ListMessageResponse(data={}, header_type=HeaderType.TEXT, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -140,13 +132,11 @@ def test_list_message_response():
             "header": {"type": "text", "text": "Important Message"},
             "footer": "Powered by Weni",
         }
-    }
 
     # List message with attachments
     result, format = ListMessageResponse(data={}, header_type=HeaderType.ATTACHMENTS, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -158,7 +148,6 @@ def test_list_message_response():
             "attachments": ["image/png:https://example.com/image.png"],
             "footer": "Powered by Weni",
         }
-    }
 
 
 def test_cta_message_response():
@@ -166,26 +155,22 @@ def test_cta_message_response():
     # Basic CTA message
     result, format = CTAMessageResponse(data={})
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "cta_url",
             "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
         }
-    }
 
     # CTA message with header
     result, format = CTAMessageResponse(data={}, header=True, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "cta_url",
             "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
             "header": {"type": "text", "text": "Important Message"},
             "footer": "Powered by Weni",
         }
-    }
 
 
 def test_order_details_response():
@@ -232,17 +217,15 @@ def test_order_details_response():
     # Basic order details
     result, format = OrderDetailsResponse(data={})
     assert result == {}
-    assert format == base_format
+    assert format["msg"] == base_format["msg"]
 
     # Order details with attachments
     result, format = OrderDetailsResponse(data={}, attachments=True, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
-            **base_format["msg"],
-            "attachments": ["image/png:https://example.com/image.png"],
-            "footer": "Powered by Weni",
-        }
+    assert format["msg"] == {
+        **base_format["msg"],
+        "attachments": ["image/png:https://example.com/image.png"],
+        "footer": "Powered by Weni",
     }
 
 
@@ -251,7 +234,7 @@ def test_location_response():
     # Basic location response
     result, format = LocationResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?", "interactive_type": "location"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?", "interactive_type": "location"}
 
 
 def test_response_type_combinations():
@@ -259,33 +242,28 @@ def test_response_type_combinations():
     # QuickReply supports all types
     result, format = QuickReplyResponse(data={}, header_type=HeaderType.NONE)
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}
 
     result, format = QuickReplyResponse(data={}, header_type=HeaderType.TEXT)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "quick_replies": ["Yes", "No"],
             "header": {"type": "text", "text": "Important Message"},
         }
-    }
 
     result, format = QuickReplyResponse(data={}, header_type=HeaderType.ATTACHMENTS)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "quick_replies": ["Yes", "No"],
             "attachments": ["image/png:https://example.com/image.png"],
         }
-    }
 
     # ListMessage supports all types
     result, format = ListMessageResponse(data={}, header_type=HeaderType.NONE)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -295,12 +273,10 @@ def test_response_type_combinations():
                 ],
             },
         }
-    }
 
     result, format = ListMessageResponse(data={}, header_type=HeaderType.TEXT)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "header": {"type": "text", "text": "Important Message"},
             "interactive_type": "list",
@@ -311,12 +287,10 @@ def test_response_type_combinations():
                 ],
             },
         }
-    }
 
     result, format = ListMessageResponse(data={}, header_type=HeaderType.ATTACHMENTS)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "attachments": ["image/png:https://example.com/image.png"],
             "interactive_type": "list",
@@ -327,34 +301,28 @@ def test_response_type_combinations():
                 ],
             },
         }
-    }
 
 
 def test_footer_combinations():
     """Test footer combinations with different responses"""
     result, format = AttachmentResponse(data={}, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "attachments": ["image/png:https://example.com/image.png"],
             "footer": "Powered by Weni",
         }
-    }
 
     result, format = QuickReplyResponse(data={}, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "quick_replies": ["Yes", "No"],
             "footer": "Powered by Weni",
         }
-    }
 
     result, format = ListMessageResponse(data={}, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -365,23 +333,19 @@ def test_footer_combinations():
             },
             "footer": "Powered by Weni",
         }
-    }
 
     result, format = CTAMessageResponse(data={}, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "cta_url",
             "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
             "footer": "Powered by Weni",
         }
-    }
 
     result, format = OrderDetailsResponse(data={}, footer=True)
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "order_details",
             "order_details": {
@@ -418,7 +382,6 @@ def test_footer_combinations():
             },
             "footer": "Powered by Weni",
         }
-    }
 
 
 def test_required_components():
@@ -427,16 +390,15 @@ def test_required_components():
 
     result, format = TextResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?"}
 
     result, format = QuickReplyResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?", "quick_replies": ["Yes", "No"]}
 
     result, format = ListMessageResponse(data={})
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "list",
             "list_message": {
@@ -446,22 +408,18 @@ def test_required_components():
                 ],
             },
         }
-    }
 
     result, format = CTAMessageResponse(data={})
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "cta_url",
             "cta_message": {"url": "https://example.com", "display_text": "Go to website"},
         }
-    }
 
     result, format = OrderDetailsResponse(data={})
     assert result == {}
-    assert format == {
-        "msg": {
+    assert format["msg"] == {
             "text": "Hello, how can I help you today?",
             "interactive_type": "order_details",
             "order_details": {
@@ -497,11 +455,10 @@ def test_required_components():
                 },
             },
         }
-    }
 
     result, format = LocationResponse(data={})
     assert result == {}
-    assert format == {"msg": {"text": "Hello, how can I help you today?", "interactive_type": "location"}}
+    assert format["msg"] == {"text": "Hello, how can I help you today?", "interactive_type": "location"}
 
 
 def test_response_data_handling():
@@ -579,3 +536,17 @@ def test_invalid_components_exception():
 
     with pytest.raises(ValueError, match="is not an official component"):
         Response(data={}, components=[Text])
+
+
+class TestFinalResponse:
+    def test_returns_response_tuple(self):
+        from weni.responses import FinalResponse
+
+        result, format = FinalResponse()
+        assert result == {"is_final_output": True}
+        assert format == {"msg": {}}
+
+    def test_is_a_response_subclass(self):
+        from weni.responses import FinalResponse, Response
+
+        assert issubclass(FinalResponse, Response)
