@@ -3,6 +3,11 @@ from weni.broadcasts.messages import (
     Message,
     QuickReply,
     Text,
+    WebChatProduct,
+    WebChatProductGroup,
+    WeniWebChatCatalog,
+    WhatsAppCatalog,
+    WhatsAppProductGroup,
 )
 from weni.broadcasts.sender import (
     BroadcastSender,
@@ -21,4 +26,9 @@ __all__ = [
     "Message",
     "Text",
     "QuickReply",
+    "WeniWebChatCatalog",
+    "WebChatProductGroup",
+    "WebChatProduct",
+    "WhatsAppCatalog",
+    "WhatsAppProductGroup",
 ]

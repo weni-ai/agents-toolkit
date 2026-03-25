@@ -108,3 +108,143 @@ class QuickReply(Message):
         }
         self._apply_header_footer(payload, self.header, self.footer)
         return payload
+
+
+@dataclass
+class WebChatProduct:
+    """A product with full details for Weni WebChat catalog."""
+
+    name: str
+    price: str
+    retailer_id: str
+    seller_id: str
+    currency: str = "BRL"
+    description: str | None = None
+    image: str | None = None
+    sale_price: str | None = None
+
+
+@dataclass
+class WebChatProductGroup:
+    """A group of products under a category for Weni WebChat."""
+
+    product: str
+    product_retailer_info: list[WebChatProduct] = field(default_factory=list)
+
+
+@dataclass
+class WeniWebChatCatalog(Message):
+    """
+    Catalog message for Weni WebChat with full product details.
+
+    Example:
+        ```python
+        Broadcast(self).send(WeniWebChatCatalog(
+            text="Here are our products",
+            products=[
+                WebChatProductGroup(
+                    product="Shirts",
+                    product_retailer_info=[
+                        WebChatProduct(name="Blue Shirt", price="149.90", retailer_id="85961", seller_id="1"),
+                    ]
+                )
+            ],
+        ))
+        ```
+    """
+
+    text: str
+    products: list[WebChatProductGroup] = field(default_factory=list)
+    action_button_text: str = "Comprar"
+    send_catalog: bool = False
+    header: str | None = None
+    footer: str | None = None
+
+    def format_message(self) -> dict[str, Any]:
+        product_groups = []
+        for group in self.products:
+            items = []
+            for item in group.product_retailer_info:
+                product_dict: dict[str, Any] = {
+                    "name": item.name,
+                    "price": item.price,
+                    "retailer_id": item.retailer_id,
+                    "seller_id": item.seller_id,
+                    "currency": item.currency,
+                }
+                if item.description:
+                    product_dict["description"] = item.description
+                if item.image:
+                    product_dict["image"] = item.image
+                if item.sale_price:
+                    product_dict["sale_price"] = item.sale_price
+                items.append(product_dict)
+            product_groups.append({
+                "product": group.product,
+                "product_retailer_info": items,
+            })
+
+        payload: dict[str, Any] = {
+            "text": self.text,
+            "catalog_message": {
+                "send_catalog": self.send_catalog,
+                "products": product_groups,
+                "action_button_text": self.action_button_text,
+            },
+        }
+        self._apply_header_footer(payload, self.header, self.footer)
+        return payload
+
+
+@dataclass
+class WhatsAppProductGroup:
+    """A group of products by retailer IDs for WhatsApp catalog."""
+
+    product: str
+    product_retailer_ids: list[str] = field(default_factory=list)
+
+
+@dataclass
+class WhatsAppCatalog(Message):
+    """
+    Catalog message for WhatsApp with product retailer IDs.
+
+    Example:
+        ```python
+        Broadcast(self).send(WhatsAppCatalog(
+            text="Here are our shirts",
+            products=[
+                WhatsAppProductGroup(
+                    product="Workshirt Titan Coyote",
+                    product_retailer_ids=["12552#1#1", "12553#1#1"],
+                ),
+            ],
+        ))
+        ```
+    """
+
+    text: str
+    products: list[WhatsAppProductGroup] = field(default_factory=list)
+    action_button_text: str = "Comprar"
+    send_catalog: bool = False
+    header: str | None = None
+    footer: str | None = None
+
+    def format_message(self) -> dict[str, Any]:
+        product_groups = []
+        for group in self.products:
+            product_groups.append({
+                "product": group.product,
+                "product_retailer_ids": group.product_retailer_ids,
+            })
+
+        payload: dict[str, Any] = {
+            "text": self.text,
+            "catalog_message": {
+                "send_catalog": self.send_catalog,
+                "products": product_groups,
+                "action_button_text": self.action_button_text,
+            },
+        }
+        self._apply_header_footer(payload, self.header, self.footer)
+        return payload

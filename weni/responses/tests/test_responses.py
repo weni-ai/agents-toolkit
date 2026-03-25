@@ -535,3 +535,17 @@ def test_invalid_components_exception():
 
     with pytest.raises(ValueError, match="is not an official component"):
         Response(data={}, components=[Text])
+
+
+class TestFinalResponse:
+    def test_returns_response_tuple(self):
+        from weni.responses import FinalResponse
+
+        result, format = FinalResponse()
+        assert result == {"is_final_output": True}
+        assert format == {"msg": {}}
+
+    def test_is_a_response_subclass(self):
+        from weni.responses import FinalResponse, Response
+
+        assert issubclass(FinalResponse, Response)

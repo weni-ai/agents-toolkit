@@ -12,8 +12,6 @@ from weni.components import (
     OrderDetails,
     Attachments,
 )
-from weni.responses import FinalResponse
-
 
 def test_get_format_example_method_cannot_be_overridden():
     """Test that get_format_example method cannot be overridden by child classes"""
@@ -131,14 +129,3 @@ def test_order_details_component_format_example():
     assert "payment_settings" in result["order_details"]
     assert "total_amount" in result["order_details"]
     assert "order" in result["order_details"]
-
-
-class TestFinalResponse:
-    def test_returns_response_tuple(self):
-        result, format = FinalResponse()
-        assert result == {"is_final_output": True}
-        assert format == {"msg": {}}
-
-    def test_is_a_response_subclass(self):
-        from weni.responses import Response
-        assert issubclass(FinalResponse, Response)
