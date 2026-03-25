@@ -1,4 +1,8 @@
 # Changelog
+## [2.5.0] - 2026-03-25
+
+- feat: new version of flows broadcast integration
+
 ## [2.4.2] - 2026-03-18
 
 - feat: return class instance in rule execution
@@ -7,7 +11,6 @@
 
 - feat: Always return traces in tool, rule and preprocessor execution
 
-# Changelog
 ## [2.4.0] - 2026-02-19
 
 - feat: Add execution trace for agents
