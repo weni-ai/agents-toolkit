@@ -12,6 +12,7 @@ from weni.responses import (
 )
 from weni.components import Component
 
+
 def test_response_initialization():
     """Test Response class initialization"""
     data = {"key": "value"}
