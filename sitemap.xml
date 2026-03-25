@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/getting-started/core-concepts/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/getting-started/installation/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/getting-started/quickstart/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/user-guide/broadcasts/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/user-guide/context/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/user-guide/responses/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+    <url>
+         <loc>https://weni-ai.github.io/agents-toolkit/user-guide/tools/</loc>
+         <lastmod>2026-03-25</lastmod>
+    </url>
+</urlset>
