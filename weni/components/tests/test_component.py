@@ -13,6 +13,7 @@ from weni.components import (
     Attachments,
 )
 
+
 def test_get_format_example_method_cannot_be_overridden():
     """Test that get_format_example method cannot be overridden by child classes"""
     with pytest.raises(TypeError) as exc_info:
