@@ -5,7 +5,6 @@ This provides the foundation for sending WhatsApp messages
 during tool execution via the Flows WhatsApp Broadcasts API.
 """
 
-from contextvars import ContextVar
 from typing import TYPE_CHECKING
 
 from weni.broadcasts.messages import Message
@@ -21,10 +20,6 @@ if TYPE_CHECKING:
 # - Sequential invocations in warm Lambda starts
 # - Multiple requests in long-running processes
 # Note: Default is None to avoid mutable default value sharing issues
-_pending_messages_var: ContextVar[list[dict] | None] = ContextVar("pending_messages", default=None)
-
-# Context variable for storing the BroadcastSender instance
-_sender_var: ContextVar["BroadcastSender | None"] = ContextVar("broadcast_sender", default=None)
 
 
 class Broadcast:
@@ -41,11 +36,11 @@ class Broadcast:
     Example:
         ```python
         from weni.broadcasts import Broadcast, Text
-        from weni.components import FinalResponse
+        from weni.responses import FinalResponse
 
         class MyTool(Tool):
             def execute(self, context: Context):
-                Broadcast.send(Text(text="Processing your request..."))
+                Broadcast(self).send(Text(text="Processing your request..."))
                 result = do_work()
                 return FinalResponse()
         ```

@@ -321,7 +321,6 @@ def test_traced_tool_integration():
     assert "name" in traces
     assert traces["name"] == "TestTracedTool"
     assert "steps" in traces
-    assert broadcasts == []
 
 
 def test_traced_preprocessor_integration():

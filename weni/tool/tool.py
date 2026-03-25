@@ -15,10 +15,28 @@ class Tool:
     Example:
         ```python
         class GetWeather(Tool):
-            def execute(self, context: Context) -> ResponseObject:
-                weather_data = get_weather(context.parameters.get("city"))
-                return TextResponse(data=weather_data)
+            def execute(self, context: Context) -> Response:
+                # Get API key from credentials
+                api_key = context.credentials.get("weather_api_key")
+
+                # Get city from parameters
+                city = context.parameters.get("city")
+
+                # Call weather API and get results
+                weather_data = get_weather(api_key, city)
+
+                # Return response with weather data and components to display it
+                return Response(
+                    data=weather_data,
+                    components=[Text, QuickReplies]
+                )
         ```
+    
+    The tool execution flow is:
+    1. The tool receives a Context object with credentials, parameters and globals
+    2. The execute() method is called with the context
+    3. The tool performs its business logic using the context data
+    4. The tool returns a Response with the result data and display components
     """
 
     _pending_broadcasts: list[dict[str, Any]]
@@ -26,7 +44,6 @@ class Tool:
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
-        Event.registry.clear()
         instance._pending_broadcasts = []
         instance.context = context
 
