@@ -1,5 +1,6 @@
+import warnings
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 
 class Event:
@@ -14,6 +15,36 @@ class Event:
         value (Any): Event value.
         metadata (Optional[Dict[str, Any]]): Additional event metadata.
     """
+
+    registry: List["Event"] = []
+
+    @classmethod
+    def register(cls, event: "Event") -> None:
+        """
+        Deprecated: Use self.register_event(event) inside your Tool instead.
+        Will be removed in version 3.0.0.
+        """
+        warnings.warn(
+            "Event.register() is deprecated and will be removed in version 3.0.0. "
+            "Use self.register_event(event) inside your Tool instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        cls.registry.append(event)
+
+    @classmethod
+    def get_events(cls) -> List[Dict[str, Any]]:
+        """
+        Deprecated: Events are now collected automatically by Tool.
+        Will be removed in version 3.0.0.
+        """
+        warnings.warn(
+            "Event.get_events() is deprecated and will be removed in version 3.0.0. "
+            "Events are now collected automatically by Tool.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return [event.to_dict() for event in cls.registry]
 
     def __init__(
         self,

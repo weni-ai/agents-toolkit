@@ -51,8 +51,13 @@ class Tool:
         instance._pending_events = []
         instance.context = context
 
+        Event.registry = []
+
         execute_result = instance.execute(context)
-        events = [e.to_dict() for e in instance._pending_events]
+
+        legacy_events = [e.to_dict() for e in Event.registry]
+        new_events = [e.to_dict() for e in instance._pending_events]
+        events = legacy_events + new_events
         broadcasts = instance._pending_broadcasts
 
         result, format = execute_result
