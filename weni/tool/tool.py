@@ -1,5 +1,7 @@
 from typing import Any
 
+from weni.broadcasts.broadcast import Broadcast
+from weni.broadcasts.messages import Message
 from weni.context import Context
 from weni.events.event import Event
 from weni.responses import ResponseObject, TextResponse
@@ -40,15 +42,22 @@ class Tool:
     """
 
     _pending_broadcasts: list[dict[str, Any]]
+    _pending_events: list[Event]
     context: Context
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         instance._pending_broadcasts = []
+        instance._pending_events = []
         instance.context = context
 
+        Event.registry = []
+
         execute_result = instance.execute(context)
-        events = Event.get_events()
+
+        legacy_events = [e.to_dict() for e in Event.registry]
+        new_events = [e.to_dict() for e in instance._pending_events]
+        events = legacy_events + new_events
         broadcasts = instance._pending_broadcasts
 
         result, format = execute_result
@@ -72,5 +81,11 @@ class Tool:
         """
         return TextResponse(data={})  # type: ignore
 
+    def send_broadcast(self, message: Message) -> None:
+        Broadcast(self).send(message)
+
     def register_broadcast(self, broadcast: dict[str, Any]) -> None:
         self._pending_broadcasts.append(broadcast)
+
+    def register_event(self, event: Event) -> None:
+        self._pending_events.append(event)

@@ -1,4 +1,12 @@
 # Changelog
+## [2.5.1] - 2026-03-25
+
+- feat: adding send_broadcast method to send broadcast with self inside tool
+
+## [2.5.0] - 2026-03-25
+
+- feat: new version of flows broadcast integration
+
 ## [2.4.2] - 2026-03-18
 
 - feat: return class instance in rule execution
@@ -6,6 +14,7 @@
 ## [2.4.1] - 2026-03-18
 
 - feat: Always return traces in tool, rule and preprocessor execution
+
 ## [2.4.0] - 2026-02-19
 
 - feat: Add execution trace for agents
