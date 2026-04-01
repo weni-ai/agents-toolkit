@@ -22,10 +22,10 @@ class Event:
     def register(cls, event: "Event") -> None:
         """
         Deprecated: Use self.register_event(event) inside your Tool instead.
-        Will be removed in version 3.0.0.
+        Will be removed soon.
         """
         warnings.warn(
-            "Event.register() is deprecated and will be removed in version 3.0.0. "
+            "Event.register() is deprecated and will be removed soon. "
             "Use self.register_event(event) inside your Tool instead.",
             DeprecationWarning,
             stacklevel=2,
@@ -36,10 +36,10 @@ class Event:
     def get_events(cls) -> List[Dict[str, Any]]:
         """
         Deprecated: Events are now collected automatically by Tool.
-        Will be removed in version 3.0.0.
+        Will be removed soon.
         """
         warnings.warn(
-            "Event.get_events() is deprecated and will be removed in version 3.0.0. "
+            "Event.get_events() is deprecated and will be removed soon. "
             "Events are now collected automatically by Tool.",
             DeprecationWarning,
             stacklevel=2,
