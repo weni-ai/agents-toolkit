@@ -8,13 +8,9 @@ from weni.responses import (
 	TextResponse,
 	QuickReplyResponse,
 )
-from weni.events.event import Event
 from weni.tracing import Traced, trace
 
 
-@pytest.fixture(autouse=True)
-def clear_event_registry():
-	Event.registry.clear()
 
 
 def test_tool_execution():

@@ -42,15 +42,22 @@ class Tool:
     """
 
     _pending_broadcasts: list[dict[str, Any]]
+    _pending_events: list[Event]
     context: Context
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
         instance._pending_broadcasts = []
+        instance._pending_events = []
         instance.context = context
 
+        Event.registry = []
+
         execute_result = instance.execute(context)
-        events = Event.get_events()
+
+        legacy_events = [event.to_dict() for event in Event.registry]
+        new_events = [event.to_dict() for event in instance._pending_events]
+        events = legacy_events + new_events
         broadcasts = instance._pending_broadcasts
 
         result, format = execute_result
@@ -79,3 +86,6 @@ class Tool:
 
     def register_broadcast(self, broadcast: dict[str, Any]) -> None:
         self._pending_broadcasts.append(broadcast)
+
+    def register_event(self, event: Event) -> None:
+        self._pending_events.append(event)
