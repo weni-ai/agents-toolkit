@@ -54,25 +54,29 @@ class GetAddress(Skill):
         return TextResponse(data=result)
 ```
 
-### Sending an Event
+### Registering Events
 
-You can send custom events to the Weni Datalake using the `Event` class. This is useful for logging actions, integrations, or relevant data during skill execution.
+Register analytics events to the Weni Datalake using `self.register_event()` inside your tool:
 
 ```python
-from weni.events import Event
+from weni import Tool
+from weni.context import Context
+from weni.events.event import Event
+from weni.responses import TextResponse
 
-Event.register(Event(
-    event_name="event_name",
-    key="key_name",
-    value_type="string",
-    value="value",
-    metadata={
-        "agent_collaboration": {
-            "agent_name": "agent_name",
-            "input_text": "input_text"
-        }
-    }
-))
+class MyTool(Tool):
+    def execute(self, context: Context):
+        result = do_work()
+
+        self.register_event(Event(
+            event_name="order_placed",
+            key="order_123",
+            value_type="string",
+            value="completed",
+            metadata={"customer": "John Doe"},
+        ))
+
+        return TextResponse(data=result)
 ```
 
 **Parameters:**
@@ -81,8 +85,9 @@ Event.register(Event(
 - `value_type`: Value type (`string`, `int`, etc).
 - `value`: Event value.
 - `metadata`: (Optional) Additional event metadata.
+- `date`: (Optional) ISO 8601 date string (defaults to current time).
 
-Registered events are available for integration and further analysis.
+Events are collected automatically per tool execution with full isolation between Lambda warm starts.
 
 ## Core Concepts
 
