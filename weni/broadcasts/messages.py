@@ -155,7 +155,7 @@ class WeniWebChatCatalog(Message):
     """
 
     text: str
-    products: list[WebChatProductGroup | dict] = field(default_factory=list)
+    products: list[WebChatProductGroup] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.products = [
@@ -237,7 +237,7 @@ class WhatsAppCatalog(Message):
     """
 
     text: str
-    products: list[WhatsAppProductGroup | dict] = field(default_factory=list)
+    products: list[WhatsAppProductGroup] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.products = [
@@ -306,7 +306,7 @@ class OneClickPayment(Message):
     last_four_digits: str
     credential_id: str
     total_amount: int
-    items: list[OrderItem | dict] = field(default_factory=list)
+    items: list[OrderItem] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.items = [
