@@ -1,12 +1,15 @@
 from weni.broadcasts.broadcast import Broadcast
 from weni.broadcasts.messages import (
     Message,
+    OneClickPayment,
+    OrderItem,
     QuickReply,
     Text,
     WebChatProduct,
     WebChatProductGroup,
     WeniWebChatCatalog,
     WhatsAppCatalog,
+    WhatsAppFlows,
     WhatsAppProductGroup,
 )
 from weni.broadcasts.sender import (
@@ -31,4 +34,7 @@ __all__ = [
     "WebChatProduct",
     "WhatsAppCatalog",
     "WhatsAppProductGroup",
+    "OneClickPayment",
+    "OrderItem",
+    "WhatsAppFlows",
 ]
