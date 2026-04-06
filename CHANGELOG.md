@@ -1,4 +1,8 @@
 # Changelog
+## [2.6.0] - 2026-04-02
+
+- refactor: get events
+
 ## [2.5.1] - 2026-03-25
 
 - feat: adding send_broadcast method to send broadcast with self inside tool

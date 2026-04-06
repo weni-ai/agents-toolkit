@@ -10,6 +10,9 @@ from weni.broadcasts.messages import (
     WebChatProductGroup,
     WhatsAppCatalog,
     WhatsAppProductGroup,
+    OneClickPayment,
+    OrderItem,
+    WhatsAppFlows,
 )
 
 class TestTextMessage:
@@ -163,3 +166,150 @@ class TestWhatsAppCatalog:
         assert payload["footer"] == "All UV protected"
         assert payload["catalog_message"]["action_button_text"] == "Buy now"
         assert len(payload["catalog_message"]["products"]) == 2
+
+
+class TestOneClickPayment:
+    def test_format_basic(self):
+        msg = OneClickPayment(
+            text="Use this card to pay?",
+            reference_id="ORDER-123",
+            last_four_digits="4242",
+            credential_id="acc_001",
+            total_amount=15000,
+            items=[OrderItem(retailer_id="SKU-1", name="Shirt", amount=15000)],
+            subtotal=15000,
+        )
+        payload = msg.format_message()
+
+        assert payload["text"] == "Use this card to pay?"
+        assert payload["interaction_type"] == "order_details"
+
+        details = payload["order_details"]
+        assert details["reference_id"] == "ORDER-123"
+        assert details["type"] == "digital-goods"
+        assert details["total_amount"] == 15000
+
+        payment = details["payment_settings"]
+        assert payment["type"] == "offsite_card_pay"
+        assert payment["offsite_card_pay"]["last_four_digits"] == "4242"
+        assert payment["offsite_card_pay"]["credential_id"] == "acc_001"
+
+        order = details["order"]
+        assert len(order["items"]) == 1
+        assert order["items"][0]["retailer_id"] == "SKU-1"
+        assert order["items"][0]["name"] == "Shirt"
+        assert order["items"][0]["amount"] == {"value": 15000, "offset": 100}
+        assert order["items"][0]["quantity"] == 1
+        assert order["subtotal"] == 15000
+        assert order["tax"]["value"] == 0
+        assert order["discount"]["value"] == 0
+        assert order["shipping"]["value"] == 0
+
+    def test_format_with_all_fields(self):
+        msg = OneClickPayment(
+            text="Confirm payment?",
+            reference_id="REF-456",
+            last_four_digits="1234",
+            credential_id="acc_002",
+            total_amount=25000,
+            items=[
+                OrderItem(retailer_id="SKU-1", name="Product A", amount=10000, quantity=2),
+                OrderItem(retailer_id="SKU-2", name="Product B", amount=5000, sale_amount=4000),
+            ],
+            subtotal=25000,
+            tax_value=500,
+            discount_value=1000,
+            shipping_value=800,
+        )
+        payload = msg.format_message()
+
+        order = payload["order_details"]["order"]
+        assert len(order["items"]) == 2
+        assert order["items"][0]["quantity"] == 2
+        assert "sale_amount" not in order["items"][0]
+        assert order["items"][1]["sale_amount"] == {"value": 4000, "offset": 100}
+        assert order["tax"]["value"] == 500
+        assert order["discount"]["value"] == 1000
+        assert order["shipping"]["value"] == 800
+
+
+class TestWhatsAppFlows:
+    def test_format_basic(self):
+        msg = WhatsAppFlows(
+            text="You have a pending confirmation.",
+            flow_id="1451561746318256",
+            flow_cta="Confirm Now",
+            flow_screen="COLLECT_DATA",
+        )
+        payload = msg.format_message()
+
+        assert payload["text"] == "You have a pending confirmation."
+        assert payload["interaction_type"] == "flow_msg"
+
+        flow = payload["flow_message"]
+        assert flow["flow_id"] == "1451561746318256"
+        assert flow["flow_cta"] == "Confirm Now"
+        assert flow["flow_mode"] == "published"
+        assert flow["flow_screen"] == "COLLECT_DATA"
+        assert flow["flow_data"] == {}
+
+    def test_format_with_data(self):
+        msg = WhatsAppFlows(
+            text="Confirm your order",
+            flow_id="123456",
+            flow_cta="Confirm",
+            flow_screen="ORDER_SCREEN",
+            flow_data={"order_value": "R$ 150,00", "card_last_four": "1234"},
+            flow_mode="draft",
+        )
+        payload = msg.format_message()
+
+        flow = payload["flow_message"]
+        assert flow["flow_data"] == {"order_value": "R$ 150,00", "card_last_four": "1234"}
+        assert flow["flow_mode"] == "draft"
+
+
+class TestDictShorthand:
+    """Tests that all message types accept dicts instead of dataclass imports."""
+
+    def test_webchat_catalog_with_dicts(self):
+        msg = WeniWebChatCatalog(
+            text="Products",
+            products=[{
+                "product": "Shirts",
+                "product_retailer_info": [
+                    {"name": "Blue Shirt", "price": "149.90", "retailer_id": "85961", "seller_id": "1"},
+                ],
+            }],
+        )
+        payload = msg.format_message()
+
+        assert payload["catalog_message"]["products"][0]["product"] == "Shirts"
+        assert payload["catalog_message"]["products"][0]["product_retailer_info"][0]["name"] == "Blue Shirt"
+
+    def test_whatsapp_catalog_with_dicts(self):
+        msg = WhatsAppCatalog(
+            text="Shirts",
+            products=[
+                {"product": "Titan Coyote", "product_retailer_ids": ["12552#1#1"]},
+            ],
+        )
+        payload = msg.format_message()
+
+        assert payload["catalog_message"]["products"][0]["product"] == "Titan Coyote"
+        assert payload["catalog_message"]["products"][0]["product_retailer_ids"] == ["12552#1#1"]
+
+    def test_one_click_payment_with_dicts(self):
+        msg = OneClickPayment(
+            text="Pay now?",
+            reference_id="ORDER-1",
+            last_four_digits="4242",
+            credential_id="acc_1",
+            total_amount=10000,
+            items=[{"retailer_id": "SKU-1", "name": "Shirt", "amount": 10000}],
+            subtotal=10000,
+        )
+        payload = msg.format_message()
+
+        assert payload["order_details"]["order"]["items"][0]["retailer_id"] == "SKU-1"
+        assert payload["order_details"]["order"]["items"][0]["amount"] == {"value": 10000, "offset": 100}

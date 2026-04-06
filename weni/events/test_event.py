@@ -54,7 +54,7 @@ def test_deprecated_register_emits_warning():
 
         assert len(w) == 1
         assert issubclass(w[0].category, DeprecationWarning)
-        assert "deprecated" in str(w[0].message).lower()
+        assert "removed" in str(w[0].message).lower()
 
     assert len(Event.registry) == 1
 

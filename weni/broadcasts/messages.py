@@ -122,6 +122,7 @@ class WebChatProduct:
     description: str | None = None
     image: str | None = None
     sale_price: str | None = None
+    product_url: str | None = None
 
 
 @dataclass
@@ -137,24 +138,35 @@ class WeniWebChatCatalog(Message):
     """
     Catalog message for Weni WebChat with full product details.
 
+    Products can be passed as dicts — no need to import WebChatProductGroup/WebChatProduct.
+
     Example:
         ```python
         Broadcast(self).send(WeniWebChatCatalog(
             text="Here are our products",
-            products=[
-                WebChatProductGroup(
-                    product="Shirts",
-                    product_retailer_info=[
-                        WebChatProduct(name="Blue Shirt", price="149.90", retailer_id="85961", seller_id="1"),
-                    ]
-                )
-            ],
+            products=[{
+                "product": "Shirts",
+                "product_retailer_info": [
+                    {"name": "Blue Shirt", "price": "149.90", "retailer_id": "85961", "seller_id": "1"},
+                ],
+            }],
         ))
         ```
     """
 
     text: str
     products: list[WebChatProductGroup] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.products = [
+            WebChatProductGroup(
+                product=group["product"],
+                product_retailer_info=[
+                    WebChatProduct(**product) for product in group.get("product_retailer_info", [])
+                ],
+            ) if isinstance(group, dict) else group
+            for group in self.products
+        ]
     action_button_text: str = "Comprar"
     send_catalog: bool = False
     header: str | None = None
@@ -178,6 +190,8 @@ class WeniWebChatCatalog(Message):
                     product_dict["image"] = item.image
                 if item.sale_price:
                     product_dict["sale_price"] = item.sale_price
+                if item.product_url:
+                    product_dict["product_url"] = item.product_url
                 items.append(product_dict)
             product_groups.append({
                 "product": group.product,
@@ -209,15 +223,14 @@ class WhatsAppCatalog(Message):
     """
     Catalog message for WhatsApp with product retailer IDs.
 
+    Products can be passed as dicts — no need to import WhatsAppProductGroup.
+
     Example:
         ```python
         Broadcast(self).send(WhatsAppCatalog(
             text="Here are our shirts",
             products=[
-                WhatsAppProductGroup(
-                    product="Workshirt Titan Coyote",
-                    product_retailer_ids=["12552#1#1", "12553#1#1"],
-                ),
+                {"product": "Workshirt Titan Coyote", "product_retailer_ids": ["12552#1#1", "12553#1#1"]},
             ],
         ))
         ```
@@ -225,6 +238,12 @@ class WhatsAppCatalog(Message):
 
     text: str
     products: list[WhatsAppProductGroup] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.products = [
+            WhatsAppProductGroup(**group) if isinstance(group, dict) else group
+            for group in self.products
+        ]
     action_button_text: str = "Comprar"
     send_catalog: bool = False
     header: str | None = None
@@ -248,3 +267,130 @@ class WhatsAppCatalog(Message):
         }
         self._apply_header_footer(payload, self.header, self.footer)
         return payload
+
+
+@dataclass
+class OrderItem:
+    """A single item in a one-click payment order."""
+
+    retailer_id: str
+    name: str
+    amount: int
+    quantity: int = 1
+    sale_amount: int | None = None
+
+
+@dataclass
+class OneClickPayment(Message):
+    """
+    One-click payment message with saved card details.
+
+    Items can be passed as dicts — no need to import OrderItem.
+
+    Example:
+        ```python
+        Broadcast(self).send(OneClickPayment(
+            text="Use this card to pay?",
+            reference_id="ORDER-123",
+            last_four_digits="4242",
+            credential_id="acc_001",
+            total_amount=15000,
+            items=[{"retailer_id": "SKU-1", "name": "Shirt", "amount": 15000}],
+            subtotal=15000,
+        ))
+        ```
+    """
+
+    text: str
+    reference_id: str
+    last_four_digits: str
+    credential_id: str
+    total_amount: int
+    items: list[OrderItem] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.items = [
+            OrderItem(**item) if isinstance(item, dict) else item
+            for item in self.items
+        ]
+    subtotal: int = 0
+    tax_value: int = 0
+    discount_value: int = 0
+    shipping_value: int = 0
+
+    def format_message(self) -> dict[str, Any]:
+        order_items = []
+        for item in self.items:
+            item_dict: dict[str, Any] = {
+                "retailer_id": item.retailer_id,
+                "name": item.name,
+                "amount": {"value": item.amount, "offset": 100},
+                "quantity": item.quantity,
+            }
+            if item.sale_amount is not None:
+                item_dict["sale_amount"] = {"value": item.sale_amount, "offset": 100}
+            order_items.append(item_dict)
+
+        order: dict[str, Any] = {
+            "items": order_items,
+            "subtotal": self.subtotal,
+            "tax": {"description": "Impostos", "offset": 100, "value": self.tax_value},
+            "discount": {"description": "Desconto", "offset": 100, "value": self.discount_value},
+            "shipping": {"description": "Frete", "offset": 100, "value": self.shipping_value},
+        }
+
+        return {
+            "text": self.text,
+            "interaction_type": "order_details",
+            "order_details": {
+                "reference_id": self.reference_id,
+                "type": "digital-goods",
+                "payment_settings": {
+                    "type": "offsite_card_pay",
+                    "offsite_card_pay": {
+                        "last_four_digits": str(self.last_four_digits),
+                        "credential_id": str(self.credential_id),
+                    },
+                },
+                "total_amount": self.total_amount,
+                "order": order,
+            },
+        }
+
+
+@dataclass
+class WhatsAppFlows(Message):
+    """
+    WhatsApp Flows interactive message.
+
+    Example:
+        ```python
+        Broadcast(self).send(WhatsAppFlows(
+            text="You have a pending confirmation.",
+            flow_id="1451561746318256",
+            flow_cta="Confirm Now",
+            flow_screen="COLLECT_DATA",
+            flow_data={"order_value": "R$ 150,00"},
+        ))
+        ```
+    """
+
+    text: str
+    flow_id: str
+    flow_cta: str
+    flow_screen: str
+    flow_data: dict[str, Any] = field(default_factory=dict)
+    flow_mode: str = "published"
+
+    def format_message(self) -> dict[str, Any]:
+        return {
+            "text": self.text,
+            "interaction_type": "flow_msg",
+            "flow_message": {
+                "flow_id": self.flow_id,
+                "flow_cta": self.flow_cta,
+                "flow_mode": self.flow_mode,
+                "flow_screen": self.flow_screen,
+                "flow_data": self.flow_data,
+            },
+        }
