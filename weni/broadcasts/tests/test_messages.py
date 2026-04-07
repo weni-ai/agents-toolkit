@@ -251,7 +251,19 @@ class TestWhatsAppFlows:
         assert flow["flow_cta"] == "Confirm Now"
         assert flow["flow_mode"] == "published"
         assert flow["flow_screen"] == "COLLECT_DATA"
+        assert flow["flow_token"] is None
         assert flow["flow_data"] == {}
+
+    def test_format_with_token(self):
+        msg = WhatsAppFlows(
+            text="Confirm",
+            flow_id="123",
+            flow_cta="Go",
+            flow_screen="SCREEN",
+            flow_token="tok_abc123",
+        )
+        payload = msg.format_message()
+        assert payload["flow_message"]["flow_token"] == "tok_abc123"
 
     def test_format_with_data(self):
         msg = WhatsAppFlows(

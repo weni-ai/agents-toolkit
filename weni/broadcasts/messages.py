@@ -370,6 +370,7 @@ class WhatsAppFlows(Message):
             flow_id="1451561746318256",
             flow_cta="Confirm Now",
             flow_screen="COLLECT_DATA",
+            flow_token="1234567890",
             flow_data={"order_value": "R$ 150,00"},
         ))
         ```
@@ -379,6 +380,7 @@ class WhatsAppFlows(Message):
     flow_id: str
     flow_cta: str
     flow_screen: str
+    flow_token: str | None = None
     flow_data: dict[str, Any] = field(default_factory=dict)
     flow_mode: str = "published"
 
@@ -391,6 +393,7 @@ class WhatsAppFlows(Message):
                 "flow_cta": self.flow_cta,
                 "flow_mode": self.flow_mode,
                 "flow_screen": self.flow_screen,
+                "flow_token": self.flow_token,
                 "flow_data": self.flow_data,
             },
         }
