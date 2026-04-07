@@ -1,4 +1,9 @@
 # Changelog
+
+## [2.6.1] - 2026-04-07
+
+- feat: add OneClickPayment and WhatsAppFlows message types with dict shorthand
+
 ## [2.6.0] - 2026-04-02
 
 - refactor: get events
