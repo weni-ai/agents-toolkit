@@ -1,4 +1,9 @@
 # Changelog
+
+## [2.6.1] - 2026-04-07
+
+- feat: new-messages
+
 ## [2.6.0] - 2026-04-02
 
 - refactor: get events
