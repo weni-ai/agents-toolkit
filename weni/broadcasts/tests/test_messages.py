@@ -12,6 +12,7 @@ from weni.broadcasts.messages import (
     WhatsAppProductGroup,
     OneClickPayment,
     OrderItem,
+    PixPayment,
     WhatsAppFlows,
 )
 
@@ -325,3 +326,81 @@ class TestDictShorthand:
 
         assert payload["order_details"]["order"]["items"][0]["retailer_id"] == "SKU-1"
         assert payload["order_details"]["order"]["items"][0]["amount"] == {"value": 10000, "offset": 100}
+
+
+class TestPixPayment:
+    def test_format_basic(self):
+        msg = PixPayment(
+            text="Copy the PIX code to pay.",
+            reference_id="ORDER-001",
+            pix_key="7d4e8f2a-3b1c-4d5e-9f6a-8b7c2d1e0f3a",
+            pix_key_type="EVP",
+            merchant_name="MY STORE",
+            pix_code="00020126580014br.gov.bcb.pix...",
+            total_amount=34990,
+            items=[{"retailer_id": "31245#1", "name": "Nike Air Max", "amount": 24990}],
+            subtotal=29990,
+            discount_value=1500,
+            shipping_value=6500,
+        )
+        payload = msg.format_message()
+
+        assert payload["text"] == "Copy the PIX code to pay."
+        assert payload["interaction_type"] == "order_details"
+        assert "footer" not in payload
+
+        details = payload["order_details"]
+        assert details["reference_id"] == "ORDER-001"
+        assert details["total_amount"] == 34990
+
+        pix = details["payment_settings"]["pix_config"]
+        assert pix["key"] == "7d4e8f2a-3b1c-4d5e-9f6a-8b7c2d1e0f3a"
+        assert pix["key_type"] == "EVP"
+        assert pix["merchant_name"] == "MY STORE"
+        assert pix["code"] == "00020126580014br.gov.bcb.pix..."
+
+        order = details["order"]
+        assert len(order["items"]) == 1
+        assert order["items"][0]["retailer_id"] == "31245#1"
+        assert order["subtotal"] == 29990
+        assert order["discount"]["value"] == 1500
+        assert order["shipping"]["value"] == 6500
+
+    def test_format_with_footer(self):
+        msg = PixPayment(
+            text="Pay now",
+            reference_id="REF-1",
+            pix_key="key",
+            pix_key_type="CPF",
+            merchant_name="Store",
+            pix_code="code",
+            total_amount=1000,
+            items=[{"retailer_id": "1", "name": "Item", "amount": 1000}],
+            subtotal=1000,
+            footer="Thanks for your purchase",
+        )
+        payload = msg.format_message()
+
+        assert payload["footer"] == "Thanks for your purchase"
+
+    def test_format_with_multiple_items(self):
+        msg = PixPayment(
+            text="Pay",
+            reference_id="REF-2",
+            pix_key="key",
+            pix_key_type="EVP",
+            merchant_name="Store",
+            pix_code="code",
+            total_amount=5000,
+            items=[
+                {"retailer_id": "A", "name": "Product A", "amount": 2500, "quantity": 1},
+                {"retailer_id": "B", "name": "Product B", "amount": 2500, "quantity": 2},
+            ],
+            subtotal=5000,
+        )
+        payload = msg.format_message()
+
+        items = payload["order_details"]["order"]["items"]
+        assert len(items) == 2
+        assert items[0]["quantity"] == 1
+        assert items[1]["quantity"] == 2
