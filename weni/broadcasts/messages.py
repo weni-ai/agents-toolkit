@@ -397,3 +397,92 @@ class WhatsAppFlows(Message):
                 "flow_data": self.flow_data,
             },
         }
+
+
+@dataclass
+class PixPayment(Message):
+    """
+    PIX payment message with order details and PIX code.
+
+    Items can be passed as dicts -- no need to import OrderItem.
+
+    Example:
+        ```python
+        Broadcast(self).send(PixPayment(
+            text="Copy the PIX code below to complete payment.",
+            reference_id="1484830849478-01",
+            pix_key="7d4e8f2a-3b1c-4d5e-9f6a-8b7c2d1e0f3a",
+            pix_key_type="EVP",
+            merchant_name="MY STORE",
+            pix_code="00020126580014br.gov.bcb.pix...",
+            total_amount=34990,
+            items=[{"retailer_id": "31245#1", "name": "Nike Air Max", "amount": 24990}],
+            subtotal=29990,
+        ))
+        ```
+    """
+
+    text: str
+    reference_id: str
+    pix_key: str
+    pix_key_type: str
+    merchant_name: str
+    pix_code: str
+    total_amount: int
+    items: list[OrderItem] = field(default_factory=list)
+    subtotal: int = 0
+    tax_value: int = 0
+    discount_value: int = 0
+    shipping_value: int = 0
+    footer: str | None = None
+
+    def __post_init__(self) -> None:
+        self.items = [
+            OrderItem(**item) if isinstance(item, dict) else item
+            for item in self.items
+        ]
+
+    def format_message(self) -> dict[str, Any]:
+        order_items = []
+        for item in self.items:
+            item_dict: dict[str, Any] = {
+                "retailer_id": item.retailer_id,
+                "name": item.name,
+                "amount": {"value": item.amount, "offset": 100},
+                "quantity": item.quantity,
+            }
+            if item.sale_amount is not None:
+                item_dict["sale_amount"] = {"value": item.sale_amount, "offset": 100}
+            order_items.append(item_dict)
+
+        order: dict[str, Any] = {
+            "items": order_items,
+            "subtotal": self.subtotal,
+            "tax": {"description": "Impostos", "offset": 100, "value": self.tax_value},
+            "discount": {"description": "Desconto", "offset": 100, "value": self.discount_value},
+            "shipping": {"description": "Frete", "offset": 100, "value": self.shipping_value},
+        }
+
+        payload: dict[str, Any] = {
+            "text": self.text,
+            "interaction_type": "order_details",
+            "order_details": {
+                "reference_id": self.reference_id,
+                "payment_settings": {
+                    "type": "digital-goods",
+                    "pix_config": {
+                        "key": self.pix_key,
+                        "key_type": self.pix_key_type,
+                        "merchant_name": self.merchant_name,
+                        "code": self.pix_code,
+                    },
+                },
+                "total_amount": self.total_amount,
+                "order": order,
+            },
+        }
+
+        if self.footer:
+            payload["footer"] = self.footer
+
+        return payload
