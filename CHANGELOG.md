@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.2] - 2026-04-14
+
+- feat: add PixPayment message
+
 ## [2.6.1] - 2026-04-07
 
 - feat: add OneClickPayment and WhatsAppFlows message types with dict shorthand

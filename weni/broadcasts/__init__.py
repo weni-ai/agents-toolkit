@@ -3,6 +3,7 @@ from weni.broadcasts.messages import (
     Message,
     OneClickPayment,
     OrderItem,
+    PixPayment,
     QuickReply,
     Text,
     WebChatProduct,
@@ -36,5 +37,6 @@ __all__ = [
     "WhatsAppProductGroup",
     "OneClickPayment",
     "OrderItem",
+    "PixPayment",
     "WhatsAppFlows",
 ]
