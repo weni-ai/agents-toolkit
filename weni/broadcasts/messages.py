@@ -10,7 +10,7 @@ sending messages during tool execution, not for formatting responses.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 
 class Message(ABC):
@@ -495,11 +495,13 @@ class WhatsAppCarousel(Message):
         ]
 
     def format_message(self) -> dict[str, Any]:
+        slides = cast(list[WhatsAppCarouselSlide], self.carousel)
         cards: list[dict[str, Any]] = []
-        for slide in self.carousel:
+        for slide in slides:
+            raw_buttons = cast(list[WhatsAppCarouselQuickReply], slide.buttons)
             cards.append({
                 "body": slide.body,
-                "buttons": [_carousel_quick_reply_to_payload(b) for b in slide.buttons],
+                "buttons": [_carousel_quick_reply_to_payload(b) for b in raw_buttons],
             })
         return {
             "text": self.text,
