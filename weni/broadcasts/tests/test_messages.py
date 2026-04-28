@@ -13,6 +13,9 @@ from weni.broadcasts.messages import (
     OneClickPayment,
     OrderItem,
     PixPayment,
+    WhatsAppCarousel,
+    WhatsAppCarouselSlide,
+    WhatsAppCarouselQuickReply,
     WhatsAppFlows,
 )
 
@@ -280,6 +283,64 @@ class TestWhatsAppFlows:
         flow = payload["flow_message"]
         assert flow["flow_data"] == {"order_value": "R$ 150,00", "card_last_four": "1234"}
         assert flow["flow_mode"] == "draft"
+
+
+class TestWhatsAppCarousel:
+    """Tests for WhatsApp carousel broadcasts."""
+
+    def test_format_matches_flows_payload(self):
+        attachments = [
+            "image/jpg:https://bravtexfashionstore.vtexassets.com/arquivos/ids/155566/camisa.jpg",
+            "image/jpg:https://bravtexfashionstore.vtexassets.com/arquivos/ids/155551/camisa-blue.jpg",
+        ]
+        carousel = [
+            {
+                "body": "Slide one",
+                "buttons": [
+                    {
+                        "sub_type": "quick_reply",
+                        "parameters": {"id": "camisa-preta", "title": "Gostei dessa! :heart_eyes:"},
+                    },
+                ],
+            },
+            {
+                "body": "Slide two",
+                "buttons": [{"button_id": "camisa-azul", "title": "Gostei dessa! :heart_eyes:"}],
+            },
+        ]
+
+        msg = WhatsAppCarousel(
+            text="Confira nossas camisas masculinas!",
+            attachments=attachments,
+            carousel=carousel,
+        )
+        payload = msg.format_message()
+
+        assert payload["text"] == "Confira nossas camisas masculinas!"
+        assert payload["interaction_type"] == "carousel"
+        assert payload["attachments"] == attachments
+        assert len(payload["carousel"]) == 2
+        assert payload["carousel"][0]["body"] == "Slide one"
+        assert payload["carousel"][0]["buttons"][0]["sub_type"] == "quick_reply"
+        assert payload["carousel"][0]["buttons"][0]["parameters"] == {
+            "id": "camisa-preta",
+            "title": "Gostei dessa! :heart_eyes:",
+        }
+        assert payload["carousel"][1]["buttons"][0]["parameters"]["id"] == "camisa-azul"
+
+    def test_dataclass_slides_and_buttons(self):
+        msg = WhatsAppCarousel(
+            text="Hello",
+            attachments=["image/jpg:https://cdn.example/img.png"],
+            carousel=[
+                WhatsAppCarouselSlide(
+                    body="Card",
+                    buttons=[WhatsAppCarouselQuickReply(button_id="opt-1", title="Choose")],
+                ),
+            ],
+        )
+        payload = msg.format_message()
+        assert payload["carousel"][0]["buttons"][0]["parameters"] == {"id": "opt-1", "title": "Choose"}
 
 
 class TestDictShorthand:
