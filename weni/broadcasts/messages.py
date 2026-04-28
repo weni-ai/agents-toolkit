@@ -400,6 +400,116 @@ class WhatsAppFlows(Message):
 
 
 @dataclass
+class WhatsAppCarouselQuickReply:
+    """Quick reply button for a WhatsApp carousel slide (payload `parameters.id` / `parameters.title`)."""
+
+    button_id: str
+    title: str
+    sub_type: str = "quick_reply"
+
+
+@dataclass
+class WhatsAppCarouselSlide:
+    """One carousel card: body copy and quick reply buttons."""
+
+    body: str
+    buttons: list[WhatsAppCarouselQuickReply | dict[str, Any]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        self.buttons = [_coerce_carousel_quick_reply(b) for b in self.buttons]
+
+
+def _coerce_carousel_quick_reply(
+    item: WhatsAppCarouselQuickReply | dict[str, Any],
+) -> WhatsAppCarouselQuickReply:
+    if isinstance(item, WhatsAppCarouselQuickReply):
+        return item
+    if not isinstance(item, dict):
+        msg = f"Expected dict or WhatsAppCarouselQuickReply, got {type(item)!r}"
+        raise TypeError(msg)
+    if "parameters" in item:
+        p = item["parameters"]
+        return WhatsAppCarouselQuickReply(
+            button_id=p["id"],
+            title=p["title"],
+            sub_type=item.get("sub_type", "quick_reply"),
+        )
+    button_id = item.get("button_id") or item.get("id")
+    if button_id is None:
+        msg = "Carousel quick reply dict must include 'button_id', 'id', or 'parameters.id'"
+        raise ValueError(msg)
+    return WhatsAppCarouselQuickReply(
+        button_id=button_id,
+        title=item["title"],
+        sub_type=item.get("sub_type", "quick_reply"),
+    )
+
+
+def _carousel_quick_reply_to_payload(button: WhatsAppCarouselQuickReply) -> dict[str, Any]:
+    return {
+        "sub_type": button.sub_type,
+        "parameters": {"id": button.button_id, "title": button.title},
+    }
+
+
+def _carousel_slide_from_mapping(slide: dict[str, Any]) -> WhatsAppCarouselSlide:
+    return WhatsAppCarouselSlide(
+        body=slide["body"],
+        buttons=slide.get("buttons", []),
+    )
+
+
+@dataclass
+class WhatsAppCarousel(Message):
+    """
+    WhatsApp carousel message with images and per-card body + quick replies.
+
+    Slides and buttons can be passed as dicts with the same shape as the Flows API.
+
+    Example:
+        ```python
+        Broadcast(self).send(WhatsAppCarousel(
+            text="Confira nossas camisas! Deslize para ver as opções:",
+            attachments=[
+                "image/jpg:https://cdn.example/img1.jpg",
+                "image/jpg:https://cdn.example/img2.jpg",
+            ],
+            carousel=[
+                {
+                    "body": "Veja os detalhes!",
+                    "buttons": [{"button_id": "sku-a", "title": "Gostei dessa!"}],
+                },
+            ],
+        ))
+        ```
+    """
+
+    text: str
+    attachments: list[str]
+    carousel: list[WhatsAppCarouselSlide | dict[str, Any]]
+
+    def __post_init__(self) -> None:
+        self.carousel = [
+            _carousel_slide_from_mapping(s) if isinstance(s, dict) else s
+            for s in self.carousel
+        ]
+
+    def format_message(self) -> dict[str, Any]:
+        cards: list[dict[str, Any]] = []
+        for slide in self.carousel:
+            cards.append({
+                "body": slide.body,
+                "buttons": [_carousel_quick_reply_to_payload(b) for b in slide.buttons],
+            })
+        return {
+            "text": self.text,
+            "interaction_type": "carousel",
+            "attachments": self.attachments,
+            "carousel": cards,
+        }
+
+
+@dataclass
 class PixPayment(Message):
     """
     PIX payment message with order details and PIX code.
