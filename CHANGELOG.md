@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.3] - 2026-05-08
+
+- feat: whastapp carousel
+
 ## [2.6.2] - 2026-04-14
 
 - feat: add PixPayment message
