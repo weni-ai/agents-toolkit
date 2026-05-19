@@ -22,9 +22,10 @@ The trace is automatically returned as a separate variable in the execution resu
 
 import functools
 import inspect
+from collections.abc import Mapping
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, TypeVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass, asdict
 from enum import Enum
 
 
@@ -61,7 +62,7 @@ class ExecutionTrace:
     error_summary: Optional[str] = None
 
 
-def _serialize_value(value: Any, max_depth: int = 3, max_length: int = 1000) -> Any:
+def _serialize_value(value: Any, max_depth: int = 5, max_length: int = 1000) -> Any:
     """Safely serialize a value for logging."""
     if max_depth <= 0:
         return "<max_depth_exceeded>"
@@ -82,19 +83,55 @@ def _serialize_value(value: Any, max_depth: int = 3, max_length: int = 1000) -> 
             return serialized + [f"<{len(value) - 50} more items>"]
         return [_serialize_value(v, max_depth - 1, max_length) for v in value]
 
-    if isinstance(value, dict):
-        if len(value) > 50:
-            items = list(value.items())[:50]
+    # Handle dicts and other mappings (e.g., MappingProxyType used in Context/PreProcessorContext)
+    if isinstance(value, Mapping):
+        items = list(value.items())
+        if len(items) > 50:
+            truncated_items = items[:50]
             result = {
-                k: _serialize_value(v, max_depth - 1, max_length) for k, v in items
+                str(k): _serialize_value(v, max_depth - 1, max_length) for k, v in truncated_items
             }
-            result["<truncated>"] = f"{len(value) - 50} more keys"
+            result["<truncated>"] = f"{len(items) - 50} more keys"
             return result
         return {
-            k: _serialize_value(v, max_depth - 1, max_length) for k, v in value.items()
+            str(k): _serialize_value(v, max_depth - 1, max_length) for k, v in items
         }
 
+    # Handle dataclasses by converting them to dict
+    if is_dataclass(value) and not isinstance(value, type):
+        try:
+            return _serialize_value(asdict(value), max_depth, max_length)
+        except Exception:
+            pass
+
+    # Handle objects with __dict__ (custom class instances) by serializing their
+    # public attributes so traces show the actual data instead of "<ClassName>".
     if hasattr(value, "__dict__"):
+        try:
+            attrs = vars(value)
+            if attrs:
+                return {
+                    k: _serialize_value(v, max_depth - 1, max_length)
+                    for k, v in attrs.items()
+                    if not k.startswith("_")
+                }
+        except Exception:
+            pass
+        return f"<{type(value).__name__}>"
+
+    # Handle objects defined with __slots__
+    if hasattr(value, "__slots__"):
+        try:
+            attrs = {}
+            for slot in value.__slots__:
+                if slot.startswith("_"):
+                    continue
+                if hasattr(value, slot):
+                    attrs[slot] = _serialize_value(getattr(value, slot), max_depth - 1, max_length)
+            if attrs:
+                return attrs
+        except Exception:
+            pass
         return f"<{type(value).__name__}>"
 
     return str(value)[:max_length]

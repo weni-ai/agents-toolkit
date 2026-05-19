@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.6.4] - 2026-05-19
+
+- fix: serialize object attributes (keys/values) in trace input/output instead of `<ClassName>` placeholder; also serialize `MappingProxyType` (used in `Context` and `PreProcessorContext`) and dataclasses
+
 ## [2.6.3] - 2026-05-08
 
 - feat: whastapp carousel

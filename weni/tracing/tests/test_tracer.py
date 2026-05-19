@@ -441,16 +441,134 @@ def test_serialize_value_max_depth_zero():
 
 
 def test_serialize_value_object_with_dict():
-    """Test _serialize_value with object that has __dict__."""
+    """Test _serialize_value serializes object attributes (keys/values) instead of class name."""
     from weni.tracing.tracer import _serialize_value
 
     class TestObj:
         def __init__(self):
             self.value = "test"
+            self.number = 42
 
     obj = TestObj()
     result = _serialize_value(obj)
-    assert result == "<TestObj>"
+    assert result == {"value": "test", "number": 42}
+
+
+def test_serialize_value_object_skips_private_attrs():
+    """Test _serialize_value skips attributes prefixed with underscore."""
+    from weni.tracing.tracer import _serialize_value
+
+    class TestObj:
+        def __init__(self):
+            self.public = "visible"
+            self._private = "hidden"
+            self.__double = "more hidden"
+
+    obj = TestObj()
+    result = _serialize_value(obj)
+    assert result == {"public": "visible"}
+
+
+def test_serialize_value_object_without_attrs_falls_back():
+    """Test _serialize_value falls back to <ClassName> when object has no public attributes."""
+    from weni.tracing.tracer import _serialize_value
+
+    class EmptyObj:
+        pass
+
+    obj = EmptyObj()
+    result = _serialize_value(obj)
+    assert result == "<EmptyObj>"
+
+
+def test_serialize_value_nested_object():
+    """Test _serialize_value with object that contains another object as attribute."""
+    from weni.tracing.tracer import _serialize_value
+
+    class Inner:
+        def __init__(self):
+            self.value = "inner_value"
+
+    class Outer:
+        def __init__(self):
+            self.name = "outer"
+            self.inner = Inner()
+
+    obj = Outer()
+    result = _serialize_value(obj)
+    assert result == {"name": "outer", "inner": {"value": "inner_value"}}
+
+
+def test_serialize_value_mapping_proxy_type():
+    """Test _serialize_value with MappingProxyType (used in Context and PreProcessorContext)."""
+    from types import MappingProxyType
+    from weni.tracing.tracer import _serialize_value
+
+    proxy = MappingProxyType({"key": "value", "num": 42})
+    result = _serialize_value(proxy)
+    assert result == {"key": "value", "num": 42}
+
+
+def test_serialize_value_preprocessor_context():
+    """Test _serialize_value serializes PreProcessorContext keys and values."""
+    from weni.context.preprocessor_context import PreProcessorContext
+    from weni.tracing.tracer import _serialize_value
+
+    context = PreProcessorContext(
+        params={"foo": "bar"},
+        payload={"order_id": "123"},
+        credentials={"token": "abc"},
+        project={"uuid": "xyz"},
+    )
+    result = _serialize_value(context)
+
+    assert isinstance(result, dict)
+    assert result["params"] == {"foo": "bar"}
+    assert result["payload"] == {"order_id": "123"}
+    assert result["credentials"] == {"token": "abc"}
+    assert result["project"] == {"uuid": "xyz"}
+
+
+def test_serialize_value_processed_data():
+    """Test _serialize_value serializes ProcessedData keys and values."""
+    from weni.preprocessor import ProcessedData
+    from weni.tracing.tracer import _serialize_value
+
+    processed = ProcessedData("urn:contact:123", {"items": ["a", "b"]})
+    result = _serialize_value(processed)
+
+    assert result == {"urn": "urn:contact:123", "data": {"items": ["a", "b"]}}
+
+
+def test_serialize_value_dataclass():
+    """Test _serialize_value serializes dataclass instances as dicts."""
+    from dataclasses import dataclass
+    from weni.tracing.tracer import _serialize_value
+
+    @dataclass
+    class Point:
+        x: int
+        y: int
+
+    point = Point(x=1, y=2)
+    result = _serialize_value(point)
+    assert result == {"x": 1, "y": 2}
+
+
+def test_serialize_value_object_with_slots():
+    """Test _serialize_value serializes attributes of objects defined with __slots__."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name", "value")
+
+        def __init__(self, name, value):
+            self.name = name
+            self.value = value
+
+    obj = SlottedObj("test", 99)
+    result = _serialize_value(obj)
+    assert result == {"name": "test", "value": 99}
 
 
 def test_serialize_value_other_types():
