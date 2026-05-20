@@ -571,6 +571,112 @@ def test_serialize_value_object_with_slots():
     assert result == {"name": "test", "value": 99}
 
 
+def test_serialize_value_dataclass_asdict_exception():
+    """Test _serialize_value falls back when asdict raises (covers except branch)."""
+    from dataclasses import dataclass
+    from weni.tracing.tracer import _serialize_value
+
+    @dataclass
+    class Sample:
+        x: int = 1
+
+    obj = Sample()
+
+    with patch("weni.tracing.tracer.asdict", side_effect=RuntimeError("boom")):
+        result = _serialize_value(obj)
+
+    # asdict failed, so it falls through to the __dict__ branch and serializes attrs
+    assert result == {"x": 1}
+
+
+def test_serialize_value_object_vars_exception():
+    """Test _serialize_value falls back to <ClassName> when vars() raises."""
+    from weni.tracing.tracer import _serialize_value
+
+    class Obj:
+        def __init__(self):
+            self.value = "test"
+
+    obj = Obj()
+
+    with patch("weni.tracing.tracer.vars", side_effect=RuntimeError("boom")):
+        result = _serialize_value(obj)
+
+    assert result == "<Obj>"
+
+
+def test_serialize_value_slots_skips_private():
+    """Test _serialize_value skips slots prefixed with underscore."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("_private", "public")
+
+        def __init__(self):
+            self._private = "hidden"
+            self.public = "visible"
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == {"public": "visible"}
+
+
+def test_serialize_value_slots_unset_attr():
+    """Test _serialize_value skips slots whose values were never set."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name", "value")
+
+        def __init__(self):
+            self.name = "set"
+            # value never assigned
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == {"name": "set"}
+
+
+def test_serialize_value_slots_all_private_falls_back():
+    """Test _serialize_value falls back to <ClassName> when all slots are private."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("_a", "_b")
+
+        def __init__(self):
+            self._a = 1
+            self._b = 2
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == "<SlottedObj>"
+
+
+def test_serialize_value_slots_exception_falls_back():
+    """Test _serialize_value falls back when slot iteration raises (covers except branch)."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name",)
+
+        def __init__(self):
+            self.name = "test"
+
+    obj = SlottedObj()
+
+    class BadIter:
+        def __iter__(self):
+            raise RuntimeError("boom during iteration")
+
+    # Replace __slots__ on the class with something that raises when iterated,
+    # so the loop inside the try/except triggers the fallback path.
+    SlottedObj.__slots__ = BadIter()  # type: ignore[assignment]
+
+    result = _serialize_value(obj)
+    assert result == "<SlottedObj>"
+
+
 def test_serialize_value_other_types():
     """Test _serialize_value with other types (fallback to str)."""
     from weni.tracing.tracer import _serialize_value
