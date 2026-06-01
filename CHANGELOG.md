@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.6.4] - 2026-05-19
+## [2.6.4] - 2026-06-01
 
 - fix: serialize object attributes (keys/values) in trace input/output instead of `<ClassName>` placeholder; also serialize `MappingProxyType` (used in `Context` and `PreProcessorContext`) and dataclasses
 
