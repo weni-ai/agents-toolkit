@@ -104,16 +104,51 @@ class FlowsClient:
 		url = self._build_url(path)
 		headers = self._build_headers()
 
+		response = self._send(method, url, headers, json, params)
+		self._check_status(response)
+		return self._parse_response(response)
+
+	def _send(
+		self,
+		method: str,
+		url: str,
+		headers: dict[str, str],
+		json: dict[str, Any] | None,
+		params: dict[str, Any] | None,
+	) -> requests.Response:
+		"""
+		Issue the HTTP request, translating transport failures.
+
+		Raises:
+			FlowsNetworkError: If the request fails before a response is received.
+		"""
 		try:
-			response = requests.request(method, url, headers=headers, json=json, params=params)
+			return requests.request(method, url, headers=headers, json=json, params=params)
 		except requests.exceptions.RequestException as e:
 			raise FlowsNetworkError(f'Failed to request Flows: {e}') from e
 
+	def _check_status(self, response: requests.Response) -> None:
+		"""
+		Validate the response status, translating non-success statuses.
+
+		Raises:
+			FlowsHTTPError: If Flows responded with a non-success status.
+		"""
 		try:
 			response.raise_for_status()
 		except requests.exceptions.HTTPError as e:
 			raise FlowsHTTPError(response.status_code, response.text) from e
 
+	def _parse_response(self, response: requests.Response) -> JSONResponse:
+		"""
+		Parse a success response body, translating unreadable bodies.
+
+		Returns:
+			The parsed JSON body, or None when the body is empty.
+
+		Raises:
+			FlowsResponseError: If a non-empty body cannot be parsed as JSON.
+		"""
 		if not response.content:
 			return None
 
