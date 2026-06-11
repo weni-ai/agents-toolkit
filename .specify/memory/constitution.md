@@ -1,13 +1,12 @@
 <!--
 Sync Impact Report
-- Version change: (template) → 1.0.0
-- Modified principles: n/a (initial ratification)
-- Added sections:
-  - Core Principles (I–V)
-  - Quality Gates
-  - Development Workflow
-  - Governance
-- Removed sections: none (template placeholders replaced)
+- Version change: 1.0.0 → 1.1.0
+- Modified principles:
+  - III. Testing with pytest (NON-NEGOTIABLE): added mandatory minimum of 95% test
+    coverage, in addition to the no-decrease rule
+- Added sections: none
+- Removed sections: none
+- Other changes: Quality Gates pytest gate updated to enforce the 95% coverage floor
 - Templates requiring updates:
   - ✅ .specify/templates/plan-template.md (Constitution Check gates resolved at runtime; no edit needed)
   - ✅ .specify/templates/spec-template.md (no constitution-specific sections required)
@@ -49,10 +48,11 @@ contract, not an internal convenience.
 Every behavior change MUST be covered by pytest tests colocated in the module's `tests/`
 directory (e.g. `weni/broadcasts/tests/`), following the existing layout. Tests MUST be
 written for new features, bug fixes (regression test reproducing the bug first), and
-contract changes. `poetry run pytest` MUST pass before merge, and coverage (measured with
-`pytest-cov` over `weni`) MUST NOT decrease relative to the base branch. External services
-(HTTP, Lambda, platform APIs) MUST be mocked with `pytest-mock`; tests MUST NOT perform
-real network calls.
+contract changes. `poetry run pytest` MUST pass before merge. Total test coverage
+(measured with `pytest-cov` over `weni`) MUST be at least 95% and MUST NOT decrease
+relative to the base branch. A PR that drops coverage below 95% MUST NOT be merged until
+tests are added to restore the floor. External services (HTTP, Lambda, platform APIs)
+MUST be mocked with `pytest-mock`; tests MUST NOT perform real network calls.
 
 **Rationale**: the library runs inside user-facing conversational agents; regressions reach
 production conversations directly and are expensive to detect after release.
@@ -87,7 +87,7 @@ The following gates MUST pass locally and in CI before any merge to the main bra
 
 1. `poetry run ruff check .` — zero violations
 2. `poetry run mypy weni` — zero errors
-3. `poetry run pytest` — all tests pass, coverage does not decrease
+3. `poetry run pytest` — all tests pass, total coverage >= 95% and does not decrease
 
 A PR that fails any gate MUST NOT be merged, regardless of urgency. Gate tooling versions
 are pinned by `poetry.lock`; upgrades to ruff/mypy/pytest MUST be done in dedicated PRs so
@@ -117,4 +117,4 @@ semantic versioning: MAJOR for principle removals or redefinitions, MINOR for ne
 materially expanded principles/sections, PATCH for clarifications and wording fixes.
 Compliance is reviewed continuously in code review and at each Spec Kit phase gate.
 
-**Version**: 1.0.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-10
+**Version**: 1.1.0 | **Ratified**: 2026-06-10 | **Last Amended**: 2026-06-11
