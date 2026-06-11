@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.7.1] - 2026-06-10
+
+- feat: integrate Graphite (gt) into spec-kit git extension
+
 ## [2.7.0] - 2026-06-10
 
 - feat: add `weni.flows` client abstraction (`FlowsClient`) for authenticated, endpoint-agnostic requests to the Flows API, with configuration resolution from context/environment and a typed error hierarchy (`FlowsClientError` and subclasses)
