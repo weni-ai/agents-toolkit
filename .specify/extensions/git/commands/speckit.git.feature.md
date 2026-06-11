@@ -6,6 +6,10 @@ description: "Create a feature branch with sequential or timestamp numbering"
 
 Create and switch to a new git feature branch for the given specification. This command handles **branch creation only** — the spec directory and files are created by the core `__SPECKIT_COMMAND_SPECIFY__` workflow.
 
+## Graphite Integration
+
+When the Graphite CLI (`gt`) is installed and the repo is initialized (`gt init`), the script creates the branch with `gt create`, producing a **tracked, stackable branch** on top of the current branch. The branch can later be submitted as a PR (with its whole stack) via `speckit.git.submit`. If `gt` is unavailable or fails, the script silently falls back to `git checkout -b`. Branch naming and JSON output are identical in both paths.
+
 ## User Input
 
 ```text

@@ -6,6 +6,10 @@ description: "Auto-commit changes after a Spec Kit command completes"
 
 Automatically stage and commit all changes after a Spec Kit command completes.
 
+## Graphite Integration
+
+When the Graphite CLI (`gt`) is installed and the repo is initialized, the script commits with `gt modify --commit`, which also **automatically restacks** any branches stacked on top of the current one. If `gt` is unavailable, the branch is untracked, or `gt modify` fails, it silently falls back to a plain `git commit`.
+
 ## Behavior
 
 This command is invoked as a hook after (or before) core commands. It:

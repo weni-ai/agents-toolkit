@@ -40,9 +40,44 @@ if ! command -v git >/dev/null 2>&1; then
     exit 0
 fi
 
+# Initialize the Graphite CLI (gt) repo config if gt is available.
+# Idempotent: skips silently when gt is missing or already initialized.
+_graphite_init() {
+    command -v gt >/dev/null 2>&1 || return 0
+
+    local git_dir
+    git_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 0
+    if [ -f "$git_dir/.graphite_repo_config" ]; then
+        return 0
+    fi
+
+    # Detect trunk: origin/HEAD if set, otherwise main/master if they exist
+    local trunk=""
+    trunk=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|^refs/remotes/origin/||') || true
+    if [ -z "$trunk" ]; then
+        if git show-ref --verify --quiet refs/heads/main; then
+            trunk="main"
+        elif git show-ref --verify --quiet refs/heads/master; then
+            trunk="master"
+        else
+            trunk=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || true
+        fi
+    fi
+    [ -z "$trunk" ] && return 0
+
+    local gt_out
+    if gt_out=$(gt init --trunk "$trunk" --no-interactive 2>&1); then
+        echo "[specify] Graphite initialized (trunk: $trunk)" >&2
+    else
+        echo "[specify] Warning: gt init failed; continuing with plain git: $gt_out" >&2
+    fi
+    return 0
+}
+
 # Check if already a git repo
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     echo "[specify] Git repository already initialized; skipping" >&2
+    _graphite_init
     exit 0
 fi
 
@@ -52,3 +87,4 @@ _git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out
 _git_out=$(git commit --allow-empty -q -m "$COMMIT_MSG" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
 
 echo "✓ Git repository initialized" >&2
+_graphite_init

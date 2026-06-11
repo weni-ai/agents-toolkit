@@ -377,16 +377,50 @@ elif [ "$BRANCH_BYTE_LEN" -gt $MAX_BRANCH_LENGTH ]; then
     >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
+# Returns 0 when the Graphite CLI is available and initialized for this repo
+_has_graphite() {
+    command -v gt >/dev/null 2>&1 || return 1
+    local git_dir
+    git_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+    [ -f "$git_dir/.graphite_repo_config" ]
+}
+
+# Create the feature branch, preferring Graphite (stacked, tracked branch)
+# and silently falling back to plain git when gt is unavailable or fails.
+_create_branch() {
+    local branch="$1"
+    if _has_graphite; then
+        local gt_out
+        if gt_out=$(gt create --no-interactive "$branch" 2>&1); then
+            >&2 echo "[specify] Branch created with Graphite (stacked on $(git rev-parse --abbrev-ref '@{-1}' 2>/dev/null || echo 'parent'))"
+            return 0
+        fi
+        >&2 echo "[specify] Warning: gt create failed; falling back to git: $gt_out"
+    fi
+    git checkout -q -b "$branch" 2>&1
+}
+
+# Switch to an existing branch, preferring gt checkout to keep Graphite state in sync
+_switch_branch() {
+    local branch="$1"
+    if _has_graphite; then
+        if gt checkout "$branch" --no-interactive >/dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    git checkout -q "$branch" 2>&1
+}
+
 if [ "$DRY_RUN" != true ]; then
     if [ "$HAS_GIT" = true ]; then
         branch_create_error=""
-        if ! branch_create_error=$(git checkout -q -b "$BRANCH_NAME" 2>&1); then
+        if ! branch_create_error=$(_create_branch "$BRANCH_NAME"); then
             current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
             if git branch --list "$BRANCH_NAME" | grep -q .; then
                 if [ "$ALLOW_EXISTING" = true ]; then
                     if [ "$current_branch" = "$BRANCH_NAME" ]; then
                         :
-                    elif ! switch_branch_error=$(git checkout -q "$BRANCH_NAME" 2>&1); then
+                    elif ! switch_branch_error=$(_switch_branch "$BRANCH_NAME"); then
                         >&2 echo "Error: Failed to switch to existing branch '$BRANCH_NAME'. Please resolve any local changes or conflicts and try again."
                         if [ -n "$switch_branch_error" ]; then
                             >&2 printf '%s\n' "$switch_branch_error"
