@@ -24,7 +24,7 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **Purpose**: Turn the empty `weni/flows/` placeholder into a proper subpackage
 
-- [ ] T001 Create package skeleton: `weni/flows/__init__.py` (module docstring only for now) and `weni/flows/tests/__init__.py` (empty); leave `weni/flows/resources/` untouched
+- [X] T001 Create package skeleton: `weni/flows/__init__.py` (module docstring only for now) and `weni/flows/tests/__init__.py` (empty); leave `weni/flows/resources/` untouched
 
 ---
 
@@ -34,7 +34,7 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Implement the error hierarchy in `weni/flows/exceptions.py`: `FlowsClientError` (base), `FlowsClientConfigError`, `FlowsHTTPError` (with public `status_code: int` and `response_body: str` attributes), `FlowsNetworkError`, `FlowsResponseError` — all with docstrings and full type annotations, per data-model.md "Error hierarchy"
+- [X] T002 Implement the error hierarchy in `weni/flows/exceptions.py`: `FlowsClientError` (base), `FlowsClientConfigError`, `FlowsHTTPError` (with public `status_code: int` and `response_body: str` attributes), `FlowsNetworkError`, `FlowsResponseError` — all with docstrings and full type annotations, per data-model.md "Error hierarchy"
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -48,12 +48,12 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 1 (write FIRST — must fail before T004)
 
-- [ ] T003 [P] [US1] Write failing tests in `weni/flows/tests/test_client.py` mocking `requests.request` with pytest-mock: each verb (GET/POST/PUT/PATCH/DELETE) issues the right method; URL joining for all slash combinations (base with/without trailing slash × path with/without leading slash) never produces duplicate or missing slashes; headers always include `Content-Type: application/json` and `Authorization: Bearer <token>`; `json` payload and `params` are forwarded; requests without a body are supported; parsed JSON (dict and list) is returned; a 2xx response with an empty body returns `None`
+- [X] T003 [P] [US1] Write failing tests in `weni/flows/tests/test_client.py` mocking `requests.request` with pytest-mock: each verb (GET/POST/PUT/PATCH/DELETE) issues the right method; URL joining for all slash combinations (base with/without trailing slash × path with/without leading slash) never produces duplicate or missing slashes; headers always include `Content-Type: application/json` and `Authorization: Bearer <token>`; `json` payload and `params` are forwarded; requests without a body are supported; parsed JSON (dict and list) is returned; a 2xx response with an empty body returns `None`
 
 ### Implementation for User Story 1
 
-- [ ] T004 [US1] Implement `FlowsClient` core in `weni/flows/client.py`: constructor taking `Context` and resolving `flows_url`/`auth_token` from `context.project` (resolution chain expanded in US2); base URL normalization; `_build_url`, `_build_headers`; private `_request(method, path, json, params)` executor using `requests` with no timeout; public `get`, `post`, `put`, `patch`, `delete` convenience methods; empty-body success → `None`; docstrings on all public members
-- [ ] T005 [US1] Export the public API from `weni/flows/__init__.py`: `FlowsClient` plus all five error types from `weni/flows/exceptions.py`, with `__all__` and package docstring, matching contracts/client-api.md "Imports"
+- [X] T004 [US1] Implement `FlowsClient` core in `weni/flows/client.py`: constructor taking `Context` and resolving `flows_url`/`auth_token` from `context.project` (resolution chain expanded in US2); base URL normalization; `_build_url`, `_build_headers`; private `_request(method, path, json, params)` executor using `requests` with no timeout; public `get`, `post`, `put`, `patch`, `delete` convenience methods; empty-body success → `None`; docstrings on all public members
+- [X] T005 [US1] Export the public API from `weni/flows/__init__.py`: `FlowsClient` plus all five error types from `weni/flows/exceptions.py`, with `__all__` and package docstring, matching contracts/client-api.md "Imports"
 
 **Checkpoint**: `poetry run pytest weni/flows/tests/test_client.py` passes — core request abstraction fully functional and testable independently
 
@@ -67,11 +67,11 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 2 (write FIRST — must fail before T007)
 
-- [ ] T006 [P] [US2] Write failing tests in `weni/flows/tests/test_config.py`: base URL precedence (`project` over `credentials` over `globals` over `FLOWS_BASE_URL` env var, using monkeypatch for env); fallback to default `https://flows.stg.cloud.weni.ai` when absent everywhere; resolved base URL is normalized (trailing slash stripped); `project_uuid` resolved from `uuid` key with `PROJECT_UUID` env fallback and `None` when absent; missing `auth_token` raises `FlowsClientConfigError` at construction with a message naming the key and its expected sources; no request is attempted when construction fails
+- [X] T006 [P] [US2] Write failing tests in `weni/flows/tests/test_config.py`: base URL precedence (`project` over `credentials` over `globals` over `FLOWS_BASE_URL` env var, using monkeypatch for env); fallback to default `https://flows.stg.cloud.weni.ai` when absent everywhere; resolved base URL is normalized (trailing slash stripped); `project_uuid` resolved from `uuid` key with `PROJECT_UUID` env fallback and `None` when absent; missing `auth_token` raises `FlowsClientConfigError` at construction with a message naming the key and its expected sources; no request is attempted when construction fails
 
 ### Implementation for User Story 2
 
-- [ ] T007 [US2] Implement full configuration resolution in `weni/flows/client.py`: `_resolve_config(key, env_var, required)` helper with the precedence chain from research.md R3 (no `context.contact` lookup); `DEFAULT_FLOWS_URL` constant; eager resolution in `__init__` of `base_url`, `auth_token` (required, fail fast per clarification Q1), and `project_uuid` (optional); `FlowsClientConfigError` messages naming the missing key and sources
+- [X] T007 [US2] Implement full configuration resolution in `weni/flows/client.py`: `_resolve_config(key, env_var, required)` helper with the precedence chain from research.md R3 (no `context.contact` lookup); `DEFAULT_FLOWS_URL` constant; eager resolution in `__init__` of `base_url`, `auth_token` (required, fail fast per clarification Q1), and `project_uuid` (optional); `FlowsClientConfigError` messages naming the missing key and sources
 
 **Checkpoint**: User Stories 1 AND 2 work independently — `poetry run pytest weni/flows/tests/` passes
 
@@ -85,11 +85,11 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 3 (write FIRST — must fail before T009)
 
-- [ ] T008 [P] [US3] Write failing tests in `weni/flows/tests/test_exceptions.py`: non-2xx response raises `FlowsHTTPError` exposing `status_code` and `response_body`; transport failure (`requests.exceptions.RequestException`) raises `FlowsNetworkError` with the original exception chained (`__cause__`); 2xx with a malformed non-empty body raises `FlowsResponseError` indicating the body was unreadable; `FlowsClientConfigError`, `FlowsHTTPError`, `FlowsNetworkError`, and `FlowsResponseError` are all subclasses of `FlowsClientError` (single-catch guarantee)
+- [X] T008 [P] [US3] Write failing tests in `weni/flows/tests/test_exceptions.py`: non-2xx response raises `FlowsHTTPError` exposing `status_code` and `response_body`; transport failure (`requests.exceptions.RequestException`) raises `FlowsNetworkError` with the original exception chained (`__cause__`); 2xx with a malformed non-empty body raises `FlowsResponseError` indicating the body was unreadable; `FlowsClientConfigError`, `FlowsHTTPError`, `FlowsNetworkError`, and `FlowsResponseError` are all subclasses of `FlowsClientError` (single-catch guarantee)
 
 ### Implementation for User Story 3
 
-- [ ] T009 [US3] Implement error translation in `weni/flows/client.py` `_request`: `response.raise_for_status()` → catch `requests.exceptions.HTTPError` and raise `FlowsHTTPError(status_code, response_body)`; catch `requests.exceptions.RequestException` and raise `FlowsNetworkError`; catch JSON decode failure on non-empty 2xx bodies and raise `FlowsResponseError`; always chain with `raise ... from` so transport diagnostics are preserved
+- [X] T009 [US3] Implement error translation in `weni/flows/client.py` `_request`: `response.raise_for_status()` → catch `requests.exceptions.HTTPError` and raise `FlowsHTTPError(status_code, response_body)`; catch `requests.exceptions.RequestException` and raise `FlowsNetworkError`; catch JSON decode failure on non-empty 2xx bodies and raise `FlowsResponseError`; always chain with `raise ... from` so transport diagnostics are preserved
 
 **Checkpoint**: All user stories independently functional — full failure matrix covered
 
@@ -99,11 +99,11 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **Purpose**: Library release hygiene (Constitution: Development Workflow) and final scope/quality verification
 
-- [ ] T010 [P] Add a `## 2.7.0` entry to `CHANGELOG.md` describing the new `weni.flows` client (new feature: Flows API client abstraction with typed error hierarchy)
-- [ ] T011 [P] Bump version from `2.6.4` to `2.7.0` (MINOR — backwards-compatible addition) in `pyproject.toml`
-- [ ] T012 [P] Add a user-guide page for the Flows client in `docs/user-guide/flows-client.md` documenting construction, configuration sources, request methods, and error handling per contracts/client-api.md, and register it in the `nav` section of `mkdocs.yml`
-- [ ] T013 Run the quality gates from quickstart.md: `poetry run ruff check .` (zero violations), `poetry run mypy weni` (zero errors), `poetry run pytest` (all pass); verify `weni/flows/client.py` and `weni/flows/exceptions.py` report **100%** coverage and overall `weni` coverage has not decreased; fix anything that fails
-- [ ] T014 Verify scope guards from quickstart.md: `git diff main --stat -- weni/broadcasts/` outputs nothing (FR-011/SC-003) and `weni/flows/` source contains no endpoint-specific paths such as `whatsapp_broadcasts` (FR-012)
+- [X] T010 [P] Add a `## 2.7.0` entry to `CHANGELOG.md` describing the new `weni.flows` client (new feature: Flows API client abstraction with typed error hierarchy)
+- [X] T011 [P] Bump version from `2.6.4` to `2.7.0` (MINOR — backwards-compatible addition) in `pyproject.toml`
+- [X] T012 [P] Add a user-guide page for the Flows client in `docs/user-guide/flows-client.md` documenting construction, configuration sources, request methods, and error handling per contracts/client-api.md, and register it in the `nav` section of `mkdocs.yml`
+- [X] T013 Run the quality gates from quickstart.md: `poetry run ruff check .` (zero violations), `poetry run mypy weni` (zero errors), `poetry run pytest` (all pass); verify `weni/flows/client.py` and `weni/flows/exceptions.py` report **100%** coverage and overall `weni` coverage has not decreased; fix anything that fails
+- [X] T014 Verify scope guards from quickstart.md: `git diff main --stat -- weni/broadcasts/` outputs nothing (FR-011/SC-003) and `weni/flows/` source contains no endpoint-specific paths such as `whatsapp_broadcasts` (FR-012)
 
 ---
 
