@@ -24,7 +24,7 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **Purpose**: Create the new `weni/contacts/` subpackage skeleton mirroring `weni/broadcasts/`
 
-- [ ] T001 Create package skeleton: `weni/contacts/__init__.py` (module docstring only for now), `weni/contacts/contact.py` (module docstring stub), `weni/contacts/sender.py` (module docstring stub), `weni/contacts/tests/__init__.py` (empty), and `weni/contacts/tests/conftest.py` with a shared `create_context()` helper (reused by `test_sender.py` and `test_contact.py`) mirroring `weni/broadcasts/tests/test_sender.py` (project/credentials/globals/contact/parameters kwargs, `_default_project()` with `flows_url` and `auth_token`); run `ruff format` on new files (tab indentation per plan, not broadcasts' space style)
+- [X] T001 Create package skeleton: `weni/contacts/__init__.py` (module docstring only for now), `weni/contacts/contact.py` (module docstring stub), `weni/contacts/sender.py` (module docstring stub), `weni/contacts/tests/__init__.py` (empty), and `weni/contacts/tests/conftest.py` with a shared `create_context()` helper (reused by `test_sender.py` and `test_contact.py`) mirroring `weni/broadcasts/tests/test_sender.py` (project/credentials/globals/contact/parameters kwargs, `_default_project()` with `flows_url` and `auth_token`); run `ruff format` on new files (tab indentation per plan, not broadcasts' space style)
 
 ---
 
@@ -34,8 +34,8 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T002 Implement the error hierarchy at the top of `weni/contacts/sender.py`: `ContactSenderError` (base), `ContactSenderConfigError`, `ContactNotFoundError`, `ContactAmbiguousError`, `ContactValidationError` — all with docstrings and full type annotations, per data-model.md "Error hierarchy" and contracts/contacts-api.md
-- [ ] T003 Implement `ContactSender.__init__` in `weni/contacts/sender.py`: store `context`, construct `FlowsClient(context)` eagerly, map `FlowsClientConfigError` to `ContactSenderConfigError`; define `CONTACTS_PATH = '/api/v2/contacts.json'` constant
+- [X] T002 Implement the error hierarchy at the top of `weni/contacts/sender.py`: `ContactSenderError` (base), `ContactSenderConfigError`, `ContactNotFoundError`, `ContactAmbiguousError`, `ContactValidationError` — all with docstrings and full type annotations, per data-model.md "Error hierarchy" and contracts/contacts-api.md
+- [X] T003 Implement `ContactSender.__init__` in `weni/contacts/sender.py`: store `context`, construct `FlowsClient(context)` eagerly, map `FlowsClientConfigError` to `ContactSenderConfigError`; define `CONTACTS_PATH = '/api/v2/contacts.json'` constant
 
 **Checkpoint**: Foundation ready — user story implementation can now begin
 
@@ -49,13 +49,13 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 1 (write FIRST — must fail before T005)
 
-- [ ] T004 [US1] Write failing tests in `weni/contacts/tests/test_sender.py` mocking `FlowsClient.get`: URN resolution precedence (`contact.urns[0]` → `contact.urn` → `parameters.contact_urn`), explicit `urn` override, missing URN raises `ContactSenderConfigError` before HTTP; successful get unwraps `results[0]` from list envelope; zero results raises `ContactNotFoundError`; multiple results raises `ContactAmbiguousError`; WhatsApp Brazil `whatsapp:55...` retry tries alternate 9th-digit URN before final not-found; non-`whatsapp:55` URNs skip retry; GET passes URN via `params={'urn': ...}` with correct value for URNs requiring encoding (e.g. `whatsapp:5582999893640`); `FlowsHTTPError`/`FlowsNetworkError`/`FlowsResponseError` from client mapped to `ContactSenderError`; `FlowsClientConfigError` at init maps to `ContactSenderConfigError`
+- [X] T004 [US1] Write failing tests in `weni/contacts/tests/test_sender.py` mocking `FlowsClient.get`: URN resolution precedence (`contact.urns[0]` → `contact.urn` → `parameters.contact_urn`), explicit `urn` override, missing URN raises `ContactSenderConfigError` before HTTP; successful get unwraps `results[0]` from list envelope; zero results raises `ContactNotFoundError`; multiple results raises `ContactAmbiguousError`; WhatsApp Brazil `whatsapp:55...` retry tries alternate 9th-digit URN before final not-found; non-`whatsapp:55` URNs skip retry; GET passes URN via `params={'urn': ...}` with correct value for URNs requiring encoding (e.g. `whatsapp:5582999893640`); `FlowsHTTPError`/`FlowsNetworkError`/`FlowsResponseError` from client mapped to `ContactSenderError`; `FlowsClientConfigError` at init maps to `ContactSenderConfigError`
 
 ### Implementation for User Story 1
 
-- [ ] T005 [US1] Implement URN helpers in `weni/contacts/sender.py`: `_get_contact_urn()`, `_resolve_urn(urn: str | None) -> str` (explicit override or context resolution, raise `ContactSenderConfigError` when missing), mirroring `BroadcastSender._get_contact_urn()` precedence from research.md R4
-- [ ] T006 [US1] Implement lookup helpers in `weni/contacts/sender.py`: `_alternate_whatsapp_brazil_urn(urn: str) -> str | None` (9th-digit toggle per research.md R5 / Flows `ContactsEndpoint.get_object` logic), `_fetch_list(urn: str) -> list[dict]`, `_get_by_urn(urn: str) -> tuple[dict[str, Any], str]` returning `(contact_dict, effective_urn)` with retry, not-found, and ambiguous handling
-- [ ] T007 [US1] Implement public `ContactSender.get(self, urn: str | None = None) -> dict[str, Any]` in `weni/contacts/sender.py`: delegate to `_get_by_urn`, return contact dict; wrap `FlowsClientError` subclasses (except config, already at init) into `ContactSenderError` with chained cause; docstring per contracts/contacts-api.md
+- [X] T005 [US1] Implement URN helpers in `weni/contacts/sender.py`: `_get_contact_urn()`, `_resolve_urn(urn: str | None) -> str` (explicit override or context resolution, raise `ContactSenderConfigError` when missing), mirroring `BroadcastSender._get_contact_urn()` precedence from research.md R4
+- [X] T006 [US1] Implement lookup helpers in `weni/contacts/sender.py`: `_alternate_whatsapp_brazil_urn(urn: str) -> str | None` (9th-digit toggle per research.md R5 / Flows `ContactsEndpoint.get_object` logic), `_fetch_list(urn: str) -> list[dict]`, `_get_by_urn(urn: str) -> tuple[dict[str, Any], str]` returning `(contact_dict, effective_urn)` with retry, not-found, and ambiguous handling
+- [X] T007 [US1] Implement public `ContactSender.get(self, urn: str | None = None) -> dict[str, Any]` in `weni/contacts/sender.py`: delegate to `_get_by_urn`, return contact dict; wrap `FlowsClientError` subclasses (except config, already at init) into `ContactSenderError` with chained cause; docstring per contracts/contacts-api.md
 
 **Checkpoint**: `poetry run pytest weni/contacts/tests/test_sender.py -k get` passes — get-by-URN fully functional and independently testable
 
@@ -69,12 +69,12 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 2 (write FIRST — must fail before T009)
 
-- [ ] T008 [P] [US2] Write failing tests in `weni/contacts/tests/test_sender.py` (extend existing file) mocking `FlowsClient.get` and `FlowsClient.post`: successful update sends POST with correct `urn` query param (including URL-safe encoding for URNs like `whatsapp:5582999893640`) and merged JSON body; dict-only (`fields`), kwargs-only (`name=...`), and hybrid payloads with kwargs overriding dict keys on conflict; at least one top-level write attribute (e.g. `name`) sent in POST body per full write surface; empty merged body raises `ContactValidationError` before HTTP; `urns` in merged body raises `ContactValidationError`; not-found on existence GET raises `ContactNotFoundError` and `post` is never called; after 9th-digit retry on GET, POST uses the effective matching URN; explicit `urn` override on update; `FlowsHTTPError` and `FlowsNetworkError` on POST mapped to `ContactSenderError`; returns updated contact dict from POST response
+- [X] T008 [P] [US2] Write failing tests in `weni/contacts/tests/test_sender.py` (extend existing file) mocking `FlowsClient.get` and `FlowsClient.post`: successful update sends POST with correct `urn` query param (including URL-safe encoding for URNs like `whatsapp:5582999893640`) and merged JSON body; dict-only (`fields`), kwargs-only (`name=...`), and hybrid payloads with kwargs overriding dict keys on conflict; at least one top-level write attribute (e.g. `name`) sent in POST body per full write surface; empty merged body raises `ContactValidationError` before HTTP; `urns` in merged body raises `ContactValidationError`; not-found on existence GET raises `ContactNotFoundError` and `post` is never called; after 9th-digit retry on GET, POST uses the effective matching URN; explicit `urn` override on update; `FlowsHTTPError` and `FlowsNetworkError` on POST mapped to `ContactSenderError`; returns updated contact dict from POST response
 
 ### Implementation for User Story 2
 
-- [ ] T009 [US2] Implement payload helpers in `weni/contacts/sender.py`: `_merge_update_payload(payload: dict[str, Any] | None, kwargs: dict[str, Any]) -> dict[str, Any]` (kwargs win on conflict), `_validate_update_body(body: dict[str, Any]) -> None` (reject empty body and `urns` key with `ContactValidationError`)
-- [ ] T010 [US2] Implement public `ContactSender.update(self, payload: dict[str, Any] | None = None, urn: str | None = None, **kwargs) -> dict[str, Any]` in `weni/contacts/sender.py`: resolve URN, run existence check via `_get_by_urn` (update-only — no POST if not found), merge/validate body, `FlowsClient.post(CONTACTS_PATH, params={'urn': effective_urn}, json=body)`, return POST response dict; docstring per contracts/contacts-api.md
+- [X] T009 [US2] Implement payload helpers in `weni/contacts/sender.py`: `_merge_update_payload(payload: dict[str, Any] | None, kwargs: dict[str, Any]) -> dict[str, Any]` (kwargs win on conflict), `_validate_update_body(body: dict[str, Any]) -> None` (reject empty body and `urns` key with `ContactValidationError`)
+- [X] T010 [US2] Implement public `ContactSender.update(self, payload: dict[str, Any] | None = None, urn: str | None = None, **kwargs) -> dict[str, Any]` in `weni/contacts/sender.py`: resolve URN, run existence check via `_get_by_urn` (update-only — no POST if not found), merge/validate body, `FlowsClient.post(CONTACTS_PATH, params={'urn': effective_urn}, json=body)`, return POST response dict; docstring per contracts/contacts-api.md
 
 **Checkpoint**: User Stories 1 AND 2 work independently — get and update both pass in `weni/contacts/tests/test_sender.py`
 
@@ -88,12 +88,12 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 ### Tests for User Story 3 (write FIRST — must fail before T012)
 
-- [ ] T011 [P] [US3] Write failing tests in `weni/contacts/tests/test_contact.py`: `Contact(tool).get()` delegates to `ContactSender.get()` with tool context; `Contact(tool).update(...)` delegates to `ContactSender.update(...)` forwarding payload/urn/kwargs; when sender raises `ContactNotFoundError` (or other contacts-specific errors), facade propagates the same error unchanged (spec User Story 3 acceptance scenario 2); uses lazy import of `ContactSender` (patch at `weni.contacts.contact.ContactSender` or equivalent)
+- [X] T011 [P] [US3] Write failing tests in `weni/contacts/tests/test_contact.py`: `Contact(tool).get()` delegates to `ContactSender.get()` with tool context; `Contact(tool).update(...)` delegates to `ContactSender.update(...)` forwarding payload/urn/kwargs; when sender raises `ContactNotFoundError` (or other contacts-specific errors), facade propagates the same error unchanged (spec User Story 3 acceptance scenario 2); uses lazy import of `ContactSender` (patch at `weni.contacts.contact.ContactSender` or equivalent)
 
 ### Implementation for User Story 3
 
-- [ ] T012 [US3] Implement `Contact` facade in `weni/contacts/contact.py`: `__init__(self, tool: Tool)` storing `_tool`, `_get_sender() -> ContactSender` lazy import mirroring `weni/broadcasts/broadcast.py`, public `get(urn=None)` and `update(payload=None, urn=None, **kwargs)` delegating to sender; docstring with usage example per contracts/contacts-api.md
-- [ ] T013 [US3] Export public API from `weni/contacts/__init__.py`: `Contact`, `ContactSender`, and all five error types with `__all__` and package docstring, matching contracts/contacts-api.md "Imports"
+- [X] T012 [US3] Implement `Contact` facade in `weni/contacts/contact.py`: `__init__(self, tool: Tool)` storing `_tool`, `_get_sender() -> ContactSender` lazy import mirroring `weni/broadcasts/broadcast.py`, public `get(urn=None)` and `update(payload=None, urn=None, **kwargs)` delegating to sender; docstring with usage example per contracts/contacts-api.md
+- [X] T013 [US3] Export public API from `weni/contacts/__init__.py`: `Contact`, `ContactSender`, and all five error types with `__all__` and package docstring, matching contracts/contacts-api.md "Imports"
 
 **Checkpoint**: All three user stories independently functional — facade + sender + exports complete
 
@@ -103,11 +103,11 @@ This feature is a new domain subpackage of the published library: source in `wen
 
 **Purpose**: Release hygiene, 100% module coverage verification, and scope guards
 
-- [ ] T014 [P] Add a `## 2.8.0` entry to `CHANGELOG.md` describing the new `weni.contacts` integration (get/update contact by URN via FlowsClient, update-only semantics, 9th-digit retry, hybrid update payloads)
-- [ ] T015 [P] Bump version from `2.7.1` to `2.8.0` (MINOR — backwards-compatible addition) in `pyproject.toml`
-- [ ] T016 [P] Add a user-guide page at `docs/user-guide/contacts.md` documenting `Contact`/`ContactSender` usage, URN resolution, get/update semantics, error types, and full write surface per `contracts/contacts-api.md`; register it in the `nav` section of `mkdocs.yml` (constitution Development Workflow — public API docs)
-- [ ] T017 Run quality gates from `specs/002-flows-contacts/quickstart.md`: `poetry run ruff check .` (zero violations), `poetry run mypy weni` (zero errors), `poetry run pytest weni/contacts/tests/ --cov=weni.contacts --cov-report=term-missing` (**100%** coverage for all `weni/contacts/` modules); then `poetry run pytest` (all pass, overall `weni` coverage >= 95%); fix anything that fails
-- [ ] T018 Verify scope guards from quickstart.md: `git diff main --stat -- weni/broadcasts/` outputs nothing (FR-011); `rg -n "requests\\.(get|post|request)" weni/contacts/` matches nothing outside tests if at all (FR-002 — FlowsClient only)
+- [X] T014 [P] Add a `## 2.8.0` entry to `CHANGELOG.md` describing the new `weni.contacts` integration (get/update contact by URN via FlowsClient, update-only semantics, 9th-digit retry, hybrid update payloads)
+- [X] T015 [P] Bump version from `2.7.1` to `2.8.0` (MINOR — backwards-compatible addition) in `pyproject.toml`
+- [X] T016 [P] Add a user-guide page at `docs/user-guide/contacts.md` documenting `Contact`/`ContactSender` usage, URN resolution, get/update semantics, error types, and full write surface per `contracts/contacts-api.md`; register it in the `nav` section of `mkdocs.yml` (constitution Development Workflow — public API docs)
+- [X] T017 Run quality gates from `specs/002-flows-contacts/quickstart.md`: `poetry run ruff check .` (zero violations), `poetry run mypy weni` (zero errors), `poetry run pytest weni/contacts/tests/ --cov=weni.contacts --cov-report=term-missing` (**100%** coverage for all `weni/contacts/` modules); then `poetry run pytest` (all pass, overall `weni` coverage >= 95%); fix anything that fails
+- [X] T018 Verify scope guards from quickstart.md: `git diff main --stat -- weni/broadcasts/` outputs nothing (FR-011); `rg -n "requests\\.(get|post|request)" weni/contacts/` matches nothing outside tests if at all (FR-002 — FlowsClient only)
 
 ---
 
@@ -194,7 +194,7 @@ With multiple developers after Phase 2:
 
 ## Notes
 
-- All tasks use strict checklist format: `- [ ] T### [P?] [US?] Description with file path`
+- All tasks use strict checklist format: `- [X] T### [P?] [US?] Description with file path`
 - Do not modify `weni/broadcasts/` (FR-011)
 - Do not use direct `requests` in `weni/contacts/` source — only `FlowsClient` (FR-002)
 - Target **100%** line coverage for `weni/contacts/` (plan + constitution floor 95% overall)
