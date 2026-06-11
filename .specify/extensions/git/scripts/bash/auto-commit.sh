@@ -133,8 +133,31 @@ if [ -z "$_commit_msg" ]; then
     _commit_msg="[Spec Kit] Auto-commit ${_phase} ${_command_name}"
 fi
 
+# Returns 0 when the Graphite CLI is available and initialized for this repo
+_has_graphite() {
+    command -v gt >/dev/null 2>&1 || return 1
+    local _git_dir
+    _git_dir=$(git rev-parse --git-common-dir 2>/dev/null) || return 1
+    [ -f "$_git_dir/.graphite_repo_config" ]
+}
+
 # Stage and commit
 _git_out=$(git add . 2>&1) || { echo "[specify] Error: git add failed: $_git_out" >&2; exit 1; }
-_git_out=$(git commit -q -m "$_commit_msg" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
+
+# Prefer Graphite: creates the commit and automatically restacks any
+# branches stacked on top of this one. Falls back to plain git commit
+# when gt is unavailable, the branch is untracked, or gt fails.
+_committed_with_gt=false
+if _has_graphite; then
+    if _gt_out=$(gt modify --commit --message "$_commit_msg" --no-interactive 2>&1); then
+        _committed_with_gt=true
+    else
+        echo "[specify] gt modify unavailable for this branch; using plain git commit" >&2
+    fi
+fi
+
+if [ "$_committed_with_gt" != "true" ]; then
+    _git_out=$(git commit -q -m "$_commit_msg" 2>&1) || { echo "[specify] Error: git commit failed: $_git_out" >&2; exit 1; }
+fi
 
 echo "[OK] Changes committed ${_phase} ${_command_name}" >&2

@@ -32,6 +32,9 @@ provides:
     - name: speckit.git.commit
       file: commands/speckit.git.commit.md
       description: "Auto-commit changes after a Spec Kit command completes"
+    - name: speckit.git.submit
+      file: commands/speckit.git.submit.md
+      description: "Submit the current stack as pull requests using Graphite (gt submit)"
 
   config:
     - name: "git-config.yml"

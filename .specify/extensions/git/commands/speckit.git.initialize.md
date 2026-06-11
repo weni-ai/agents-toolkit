@@ -6,6 +6,10 @@ description: "Initialize a Git repository with an initial commit"
 
 Initialize a Git repository in the current project directory if one does not already exist.
 
+## Graphite Integration
+
+After ensuring the Git repository exists, the script also initializes the Graphite CLI (`gt init --trunk <trunk>`) when `gt` is installed and not yet configured for the repo. The trunk is detected from `origin/HEAD`, falling back to `main`/`master`. This is idempotent and skips silently when `gt` is missing or already initialized.
+
 ## Execution
 
 Run the appropriate script from the project root:
