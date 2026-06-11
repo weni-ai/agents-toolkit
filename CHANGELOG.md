@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.7.0] - 2026-06-10
+
+- feat: add `weni.flows` client abstraction (`FlowsClient`) for authenticated, endpoint-agnostic requests to the Flows API, with configuration resolution from context/environment and a typed error hierarchy (`FlowsClientError` and subclasses)
+
 ## [2.6.4] - 2026-06-01
 
 - fix: serialize object attributes (keys/values) in trace input/output instead of `<ClassName>` placeholder; also serialize `MappingProxyType` (used in `Context` and `PreProcessorContext`) and dataclasses

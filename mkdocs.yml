@@ -95,3 +95,4 @@ nav:
     - Responses: user-guide/responses.md
     - Context: user-guide/context.md
     - Broadcasts: user-guide/broadcasts.md
+    - Flows Client: user-guide/flows-client.md
