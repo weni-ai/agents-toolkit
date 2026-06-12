@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.0] - 2026-06-11
+
+- feat: add `weni.contacts` integration for reading and updating Flows contacts by conversation URN via `FlowsClient` (`Contact` facade and `ContactSender`); update-only semantics with hybrid dict/kwargs payloads, validation for empty body and `urns` in body, and WhatsApp Brazil 9th-digit URN retry on lookup
+
 ## [2.7.1] - 2026-06-10
 
 - feat: integrate Graphite (gt) into spec-kit git extension
