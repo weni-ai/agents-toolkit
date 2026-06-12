@@ -40,6 +40,9 @@ class ContactSender:
 	"""
 
 	CONTACTS_PATH = '/api/v2/contacts.json'
+	WHATSAPP_BRAZIL_NUMBER_LENGTH = 13
+	WHATSAPP_BRAZIL_NINTH_DIGIT_INDEX = 4
+	EXACT_CONTACT_MATCH_COUNT = 1
 
 	def __init__(self, context: Context):
 		self.context = context
@@ -80,11 +83,12 @@ class ContactSender:
 			return None
 
 		_, _, path = urn.partition(':')
+		ninth_digit_index = ContactSender.WHATSAPP_BRAZIL_NINTH_DIGIT_INDEX
 
-		if len(path) == 13 and path[4] == '9':
-			alternate_path = path[:4] + path[5:]
+		if len(path) == ContactSender.WHATSAPP_BRAZIL_NUMBER_LENGTH and path[ninth_digit_index] == '9':
+			alternate_path = path[:ninth_digit_index] + path[ninth_digit_index + 1 :]
 		else:
-			alternate_path = path[:4] + '9' + path[4:]
+			alternate_path = path[:ninth_digit_index] + '9' + path[ninth_digit_index:]
 
 		return f'whatsapp:{alternate_path}'
 
@@ -112,17 +116,17 @@ class ContactSender:
 			A tuple of (contact_dict, effective_urn).
 		"""
 		results = self._fetch_list(urn)
-		if len(results) == 1:
+		if len(results) == self.EXACT_CONTACT_MATCH_COUNT:
 			return results[0], urn
-		if len(results) > 1:
+		if len(results) > self.EXACT_CONTACT_MATCH_COUNT:
 			raise ContactAmbiguousError(f'Multiple contacts matched URN {urn!r}.')
 
 		alternate_urn = self._alternate_whatsapp_brazil_urn(urn)
 		if alternate_urn and alternate_urn != urn:
 			alternate_results = self._fetch_list(alternate_urn)
-			if len(alternate_results) == 1:
+			if len(alternate_results) == self.EXACT_CONTACT_MATCH_COUNT:
 				return alternate_results[0], alternate_urn
-			if len(alternate_results) > 1:
+			if len(alternate_results) > self.EXACT_CONTACT_MATCH_COUNT:
 				raise ContactAmbiguousError(f'Multiple contacts matched URN {alternate_urn!r}.')
 
 		raise ContactNotFoundError(f'No contact found for URN {urn!r}.')
