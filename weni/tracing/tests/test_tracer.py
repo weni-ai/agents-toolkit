@@ -441,16 +441,240 @@ def test_serialize_value_max_depth_zero():
 
 
 def test_serialize_value_object_with_dict():
-    """Test _serialize_value with object that has __dict__."""
+    """Test _serialize_value serializes object attributes (keys/values) instead of class name."""
     from weni.tracing.tracer import _serialize_value
 
     class TestObj:
         def __init__(self):
             self.value = "test"
+            self.number = 42
 
     obj = TestObj()
     result = _serialize_value(obj)
-    assert result == "<TestObj>"
+    assert result == {"value": "test", "number": 42}
+
+
+def test_serialize_value_object_skips_private_attrs():
+    """Test _serialize_value skips attributes prefixed with underscore."""
+    from weni.tracing.tracer import _serialize_value
+
+    class TestObj:
+        def __init__(self):
+            self.public = "visible"
+            self._private = "hidden"
+            self.__double = "more hidden"
+
+    obj = TestObj()
+    result = _serialize_value(obj)
+    assert result == {"public": "visible"}
+
+
+def test_serialize_value_object_without_attrs_falls_back():
+    """Test _serialize_value falls back to <ClassName> when object has no public attributes."""
+    from weni.tracing.tracer import _serialize_value
+
+    class EmptyObj:
+        pass
+
+    obj = EmptyObj()
+    result = _serialize_value(obj)
+    assert result == "<EmptyObj>"
+
+
+def test_serialize_value_nested_object():
+    """Test _serialize_value with object that contains another object as attribute."""
+    from weni.tracing.tracer import _serialize_value
+
+    class Inner:
+        def __init__(self):
+            self.value = "inner_value"
+
+    class Outer:
+        def __init__(self):
+            self.name = "outer"
+            self.inner = Inner()
+
+    obj = Outer()
+    result = _serialize_value(obj)
+    assert result == {"name": "outer", "inner": {"value": "inner_value"}}
+
+
+def test_serialize_value_mapping_proxy_type():
+    """Test _serialize_value with MappingProxyType (used in Context and PreProcessorContext)."""
+    from types import MappingProxyType
+    from weni.tracing.tracer import _serialize_value
+
+    proxy = MappingProxyType({"key": "value", "num": 42})
+    result = _serialize_value(proxy)
+    assert result == {"key": "value", "num": 42}
+
+
+def test_serialize_value_preprocessor_context():
+    """Test _serialize_value serializes PreProcessorContext keys and values."""
+    from weni.context.preprocessor_context import PreProcessorContext
+    from weni.tracing.tracer import _serialize_value
+
+    context = PreProcessorContext(
+        params={"foo": "bar"},
+        payload={"order_id": "123"},
+        credentials={"token": "abc"},
+        project={"uuid": "xyz"},
+    )
+    result = _serialize_value(context)
+
+    assert isinstance(result, dict)
+    assert result["params"] == {"foo": "bar"}
+    assert result["payload"] == {"order_id": "123"}
+    assert result["credentials"] == {"token": "abc"}
+    assert result["project"] == {"uuid": "xyz"}
+
+
+def test_serialize_value_processed_data():
+    """Test _serialize_value serializes ProcessedData keys and values."""
+    from weni.preprocessor import ProcessedData
+    from weni.tracing.tracer import _serialize_value
+
+    processed = ProcessedData("urn:contact:123", {"items": ["a", "b"]})
+    result = _serialize_value(processed)
+
+    assert result == {"urn": "urn:contact:123", "data": {"items": ["a", "b"]}}
+
+
+def test_serialize_value_dataclass():
+    """Test _serialize_value serializes dataclass instances as dicts."""
+    from dataclasses import dataclass
+    from weni.tracing.tracer import _serialize_value
+
+    @dataclass
+    class Point:
+        x: int
+        y: int
+
+    point = Point(x=1, y=2)
+    result = _serialize_value(point)
+    assert result == {"x": 1, "y": 2}
+
+
+def test_serialize_value_object_with_slots():
+    """Test _serialize_value serializes attributes of objects defined with __slots__."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name", "value")
+
+        def __init__(self, name, value):
+            self.name = name
+            self.value = value
+
+    obj = SlottedObj("test", 99)
+    result = _serialize_value(obj)
+    assert result == {"name": "test", "value": 99}
+
+
+def test_serialize_value_dataclass_asdict_exception():
+    """Test _serialize_value falls back when asdict raises (covers except branch)."""
+    from dataclasses import dataclass
+    from weni.tracing.tracer import _serialize_value
+
+    @dataclass
+    class Sample:
+        x: int = 1
+
+    obj = Sample()
+
+    with patch("weni.tracing.tracer.asdict", side_effect=RuntimeError("boom")):
+        result = _serialize_value(obj)
+
+    # asdict failed, so it falls through to the __dict__ branch and serializes attrs
+    assert result == {"x": 1}
+
+
+def test_serialize_value_object_vars_exception():
+    """Test _serialize_value falls back to <ClassName> when vars() raises."""
+    from weni.tracing.tracer import _serialize_value
+
+    class Obj:
+        def __init__(self):
+            self.value = "test"
+
+    obj = Obj()
+
+    with patch("weni.tracing.tracer.vars", side_effect=RuntimeError("boom")):
+        result = _serialize_value(obj)
+
+    assert result == "<Obj>"
+
+
+def test_serialize_value_slots_skips_private():
+    """Test _serialize_value skips slots prefixed with underscore."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("_private", "public")
+
+        def __init__(self):
+            self._private = "hidden"
+            self.public = "visible"
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == {"public": "visible"}
+
+
+def test_serialize_value_slots_unset_attr():
+    """Test _serialize_value skips slots whose values were never set."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name", "value")
+
+        def __init__(self):
+            self.name = "set"
+            # value never assigned
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == {"name": "set"}
+
+
+def test_serialize_value_slots_all_private_falls_back():
+    """Test _serialize_value falls back to <ClassName> when all slots are private."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("_a", "_b")
+
+        def __init__(self):
+            self._a = 1
+            self._b = 2
+
+    obj = SlottedObj()
+    result = _serialize_value(obj)
+    assert result == "<SlottedObj>"
+
+
+def test_serialize_value_slots_exception_falls_back():
+    """Test _serialize_value falls back when slot iteration raises (covers except branch)."""
+    from weni.tracing.tracer import _serialize_value
+
+    class SlottedObj:
+        __slots__ = ("name",)
+
+        def __init__(self):
+            self.name = "test"
+
+    obj = SlottedObj()
+
+    class BadIter:
+        def __iter__(self):
+            raise RuntimeError("boom during iteration")
+
+    # Replace __slots__ on the class with something that raises when iterated,
+    # so the loop inside the try/except triggers the fallback path.
+    SlottedObj.__slots__ = BadIter()  # type: ignore[assignment]
+
+    result = _serialize_value(obj)
+    assert result == "<SlottedObj>"
 
 
 def test_serialize_value_other_types():

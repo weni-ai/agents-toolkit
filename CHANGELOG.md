@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.8.0] - 2026-06-11
+
+- feat: add `weni.contacts` integration for reading and updating Flows contacts by conversation URN via `FlowsClient` (`Contact` facade and `ContactSender`); update-only semantics with hybrid dict/kwargs payloads, validation for empty body and `urns` in body, and WhatsApp Brazil 9th-digit URN retry on lookup
+
+## [2.7.1] - 2026-06-10
+
+- feat: integrate Graphite (gt) into spec-kit git extension
+
+## [2.7.0] - 2026-06-10
+
+- feat: add `weni.flows` client abstraction (`FlowsClient`) for authenticated, endpoint-agnostic requests to the Flows API, with configuration resolution from context/environment and a typed error hierarchy (`FlowsClientError` and subclasses)
+
+## [2.6.4] - 2026-06-01
+
+- fix: serialize object attributes (keys/values) in trace input/output instead of `<ClassName>` placeholder; also serialize `MappingProxyType` (used in `Context` and `PreProcessorContext`) and dataclasses
+
+## [2.6.3] - 2026-05-08
+
+- feat: whastapp carousel
+
 ## [2.6.2] - 2026-04-14
 
 - feat: add PixPayment message
