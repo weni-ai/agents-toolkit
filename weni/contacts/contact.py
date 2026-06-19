@@ -42,7 +42,9 @@ class Contact:
 		Returns:
 			The Flows contact object as a dictionary.
 		"""
-		return self._get_sender().get(urn=urn)
+		contact = self._get_sender().get(urn=urn)
+		self._tool._register_operation("contacts_get", urn)
+		return contact
 
 	def update(
 		self,
@@ -61,4 +63,8 @@ class Contact:
 		Returns:
 			The updated Flows contact object as a dictionary.
 		"""
-		return self._get_sender().update(payload=payload, urn=urn, **kwargs)
+		result = self._get_sender().update(payload=payload, urn=urn, **kwargs)
+		merged: dict[str, Any] = dict(payload or {})
+		merged.update(kwargs)
+		self._tool._register_operation("contacts_updated", merged)
+		return result

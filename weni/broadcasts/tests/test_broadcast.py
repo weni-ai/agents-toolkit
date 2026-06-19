@@ -33,7 +33,7 @@ class TestBroadcast:
         """Test that Broadcast takes a tool instance."""
         mock_tool = MagicMock()
         mock_tool.context = create_context()
-        mock_tool._pending_broadcasts = []
+        mock_tool._pending_operations = {"messages_sent": []}
 
         broadcast = Broadcast(mock_tool)
         assert broadcast._tool is mock_tool
@@ -47,13 +47,13 @@ class TestBroadcast:
 
         mock_tool = MagicMock()
         mock_tool.context = create_context(project={"auth_token": "tk"})
-        mock_tool._pending_broadcasts = []
+        mock_tool._pending_operations = {"messages_sent": []}
 
         with patch.object(Broadcast, '_get_sender', return_value=mock_sender):
             broadcast = Broadcast(mock_tool)
             broadcast.send(Text(text="Hello!"))
 
-        mock_tool.register_broadcast.assert_called_once_with({"text": "Hello!"})
+        mock_tool._register_operation.assert_called_once_with("messages_sent", {"text": "Hello!"})
         mock_sender.send.assert_called_once_with({"text": "Hello!"})
 
     @patch("weni.broadcasts.sender.BroadcastSender")
@@ -64,13 +64,13 @@ class TestBroadcast:
 
         mock_tool = MagicMock()
         mock_tool.context = create_context(project={"auth_token": "tk"})
-        mock_tool._pending_broadcasts = []
+        mock_tool._pending_operations = {"messages_sent": []}
 
         with patch.object(Broadcast, '_get_sender', return_value=mock_sender):
             broadcast = Broadcast(mock_tool)
             broadcast.send_many([Text(text="Msg 1"), Text(text="Msg 2")])
 
-        assert mock_tool.register_broadcast.call_count == 2
+        assert mock_tool._register_operation.call_count == 2
         mock_sender.send_batch.assert_called_once()
         payloads = mock_sender.send_batch.call_args[0][0]
         assert len(payloads) == 2
@@ -81,45 +81,45 @@ class TestBroadcast:
         """Test that send_many with empty list does nothing."""
         mock_tool = MagicMock()
         mock_tool.context = create_context()
-        mock_tool._pending_broadcasts = []
+        mock_tool._pending_operations = {"messages_sent": []}
 
         broadcast = Broadcast(mock_tool)
         broadcast.send_many([])
 
-        mock_tool.register_broadcast.assert_not_called()
+        mock_tool._register_operation.assert_not_called()
 
 
 class TestBroadcastIsolation:
     """Tests that broadcasts are isolated per tool execution."""
 
-    def test_register_broadcast_appends(self):
-        """Test that register_broadcast appends to the tool's list."""
+    def test_register_operation_appends(self):
+        """Test that _register_operation appends to the named list."""
         from weni.tool import Tool
 
         mock_instance = object.__new__(Tool)
-        mock_instance._pending_broadcasts = []
+        mock_instance._pending_operations = {"messages_sent": []}
 
-        mock_instance.register_broadcast({"text": "Hello"})
-        mock_instance.register_broadcast({"text": "World"})
+        mock_instance._register_operation("messages_sent", {"text": "Hello"})
+        mock_instance._register_operation("messages_sent", {"text": "World"})
 
-        assert len(mock_instance._pending_broadcasts) == 2
-        assert mock_instance._pending_broadcasts[0]["text"] == "Hello"
-        assert mock_instance._pending_broadcasts[1]["text"] == "World"
+        assert len(mock_instance._pending_operations["messages_sent"]) == 2
+        assert mock_instance._pending_operations["messages_sent"][0]["text"] == "Hello"
+        assert mock_instance._pending_operations["messages_sent"][1]["text"] == "World"
 
-    def test_separate_tools_have_separate_broadcasts(self):
-        """Test that two tool instances don't share broadcasts."""
+    def test_separate_tools_have_separate_operations(self):
+        """Test that two tool instances don't share pending operations."""
         from weni.tool import Tool
 
         tool1 = object.__new__(Tool)
-        tool1._pending_broadcasts = []
+        tool1._pending_operations = {"messages_sent": []}
 
         tool2 = object.__new__(Tool)
-        tool2._pending_broadcasts = []
+        tool2._pending_operations = {"messages_sent": []}
 
-        tool1.register_broadcast({"text": "From tool 1"})
-        tool2.register_broadcast({"text": "From tool 2"})
+        tool1._register_operation("messages_sent", {"text": "From tool 1"})
+        tool2._register_operation("messages_sent", {"text": "From tool 2"})
 
-        assert len(tool1._pending_broadcasts) == 1
-        assert tool1._pending_broadcasts[0]["text"] == "From tool 1"
-        assert len(tool2._pending_broadcasts) == 1
-        assert tool2._pending_broadcasts[0]["text"] == "From tool 2"
+        assert len(tool1._pending_operations["messages_sent"]) == 1
+        assert tool1._pending_operations["messages_sent"][0]["text"] == "From tool 1"
+        assert len(tool2._pending_operations["messages_sent"]) == 1
+        assert tool2._pending_operations["messages_sent"][0]["text"] == "From tool 2"
