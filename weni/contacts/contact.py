@@ -22,7 +22,17 @@ class Contact:
 		        contact = Contact(self).get()
 		        Contact(self).update(fields={'email': 'user@example.com'})
 		```
+
+	Shorthand via Tool:
+		``self.get_contact(urn)`` is equivalent to ``self.contact.get(urn)``.
+		``self.update_contact(payload)`` is equivalent to ``self.contact.update(payload)``.
 	"""
+
+	# Exposes self.get_contact / self.update_contact on any Tool without adding methods to Tool.
+	_tool_methods: dict[str, str] = {
+		"get_contact": "get",
+		"update_contact": "_update_contact_compat",
+	}
 
 	def __init__(self, tool: 'Tool'):
 		self._tool = tool
@@ -68,3 +78,11 @@ class Contact:
 		merged.update(kwargs)
 		self._tool._register_operation("contacts_updated", merged)
 		return result
+
+	def _update_contact_compat(
+		self,
+		new_contact: dict[str, Any],
+		old_contact: dict[str, Any] | None = None,
+	) -> dict[str, Any]:
+		"""Backward-compatible shim: mirrors the old Tool.update_contact(new, old) signature."""
+		return self.update(payload=new_contact)

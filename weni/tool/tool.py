@@ -52,13 +52,26 @@ class Tool:
         cls._FACADE_REGISTRY[name] = facade_cls
 
     def __getattr__(self, name: str) -> Any:
-        facade_cls = type(self)._FACADE_REGISTRY.get(name)
-        if facade_cls is None:
-            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
-        # Instantiate and cache so subsequent accesses skip __getattr__.
-        facade = facade_cls(self)
-        object.__setattr__(self, name, facade)
-        return facade
+        registry = type(self)._FACADE_REGISTRY
+
+        # Direct facade access: self.broadcasts, self.contact, …
+        facade_cls = registry.get(name)
+        if facade_cls is not None:
+            facade = facade_cls(self)
+            object.__setattr__(self, name, facade)
+            return facade
+
+        # Shorthand method access: self.send_broadcast, self.get_contact, …
+        # Each facade class may declare _tool_methods = {"shorthand": "method_on_facade"}.
+        for facade_name, facade_cls in registry.items():
+            shorthands: dict[str, str] = getattr(facade_cls, "_tool_methods", {})
+            if name in shorthands:
+                facade = getattr(self, facade_name)   # reuses facade lookup + caching above
+                method = getattr(facade, shorthands[name])
+                object.__setattr__(self, name, method)
+                return method
+
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __new__(cls, context: Context):
         instance = super().__new__(cls)
