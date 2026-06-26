@@ -7,31 +7,49 @@ The Contacts module lets tools read and update Flows contact records for the cur
 ```python
 from weni import Tool
 from weni.context import Context
-from weni.contacts import Contact
 from weni.responses import FinalResponse
 
 class MyTool(Tool):
     def execute(self, context: Context):
-        contact = Contact(self).get()
-        Contact(self).update(fields={'email': 'leonardo.amaral@vtex.com'})
+        contact = self.contact.get()
+        self.contact.update(fields={"email": "user@example.com"})
         return FinalResponse()
 ```
 
-`Contact(self)` receives the tool instance, which provides the execution context (including the conversation contact URN).
+`self.contact` is a `Contact` instance pre-bound to the tool. It is created on first access and cached for the duration of the execution.
+
+## Calling Styles
+
+All three styles are equivalent. Choose whichever fits your convention:
+
+```python
+# Namespaced (recommended) — available via self.<name> on any Tool
+contact = self.contact.get()
+self.contact.update(fields={"email": "user@example.com"})
+
+# Shorthand — mirrors the old API, resolved through the same facade
+contact = self.get_contact()
+self.update_contact({"fields": {"email": "user@example.com"}})
+
+# Explicit — pass the tool instance yourself
+from weni.contacts import Contact
+contact = Contact(self).get()
+Contact(self).update(fields={"email": "user@example.com"})
+```
 
 ## How It Works
 
 ```
    Tool.execute()                        Flows API
    ──────────────                        ─────────
-   Contact(self).get()
+   self.contact.get()
         │
         ▼
    ContactSender
    GET /api/v2/contacts.json?urn=... ──────► Returns contact list envelope
         │                                    (single result unwrapped)
         ▼
-   Contact(self).update(fields={...})
+   self.contact.update(fields={...})
         │
         ├── GET existence check (same URN resolution + 9th-digit retry)
         │
@@ -54,7 +72,12 @@ When you omit `urn`, the sender resolves it from the execution context with this
 | 2 | `contact.urn` |
 | 3 | `parameters.contact_urn` |
 
-Pass `urn=` to override context resolution for either `get()` or `update()`.
+Pass `urn=` to override context resolution for either `get()` or `update()`:
+
+```python
+contact = self.contact.get(urn="whatsapp:5511999990000")
+self.contact.update(name="Maria", urn="whatsapp:5511999990000")
+```
 
 ### WhatsApp Brazil 9th-digit retry
 
@@ -66,13 +89,14 @@ For URNs starting with `whatsapp:55`, lookup retries with the alternate 9th-digi
 
 ```python
 # Dict only
-Contact(self).update(fields={'email': 'a@example.com'})
+self.contact.update({"fields": {"email": "a@example.com"}})
 
-# Kwargs only
-Contact(self).update(name='Leonardo')
+# Kwargs only (recommended)
+self.contact.update(name="Leonardo")
+self.contact.update(fields={"email": "a@example.com"})
 
-# Hybrid — name wins on conflict
-Contact(self).update({'name': 'Old', 'language': 'por'}, name='Leonardo')
+# Hybrid — name kwarg wins on conflict
+self.contact.update({"name": "Old", "language": "por"}, name="Leonardo")
 ```
 
 Supported write attributes follow the Flows contacts POST surface: `fields`, `name`, `language`, `groups`, and other top-level attributes accepted by Flows.
@@ -81,6 +105,20 @@ Validation rules:
 
 - The merged body must not be empty.
 - The merged body must not include `urns` when the contact is identified by the query URN.
+
+## Operation Log
+
+Each `get()` and `update()` call is recorded in the tool's operation log and included in the response:
+
+```python
+{
+    "result": <data>,
+    "contacts_get":     [<urn>, …],       # one entry per get()
+    "contacts_updated": [<merged body>, …] # one entry per update()
+}
+```
+
+These keys only appear in the result when at least one operation was performed.
 
 ## Configuration
 
@@ -99,7 +137,6 @@ All contacts failures subclass `ContactSenderError`:
 
 ```python
 from weni.contacts import (
-    Contact,
     ContactSenderError,
     ContactSenderConfigError,
     ContactNotFoundError,
@@ -108,7 +145,7 @@ from weni.contacts import (
 )
 
 try:
-    Contact(tool).update(name='Leonardo')
+    self.contact.update(name="Leonardo")
 except ContactNotFoundError:
     ...
 except ContactValidationError:
@@ -136,7 +173,30 @@ from weni.contacts import ContactSender
 
 sender = ContactSender(context)
 contact = sender.get()
-updated = sender.update(fields={'email': 'leonardo.amaral@vtex.com'})
+updated = sender.update(fields={"email": "user@example.com"})
 ```
 
 Method signatures and behavior match the `Contact` facade.
+
+## Test Definition
+
+For testing via `weni run`, pass config through `project` and `contact`:
+
+```yaml
+tests:
+    test_get_contact:
+        project:
+            auth_token: "your-jwt-token"
+            flows_url: "https://flows.weni.ai"
+        contact:
+            urn: "whatsapp:5511999990000"
+
+    test_update_contact:
+        parameters:
+            email: "user@example.com"
+        project:
+            auth_token: "your-jwt-token"
+            flows_url: "https://flows.weni.ai"
+        contact:
+            urn: "whatsapp:5511999990000"
+```

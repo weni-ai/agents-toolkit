@@ -44,7 +44,13 @@ class Broadcast:
                 result = do_work()
                 return FinalResponse()
         ```
+
+    Shorthand via Tool:
+        ``self.send_broadcast(message)`` is equivalent to ``self.broadcasts.send(message)``.
     """
+
+    # Exposes self.send_broadcast on any Tool instance without adding a method to Tool.
+    _tool_methods: dict[str, str] = {"send_broadcast": "send"}
     def __init__(self, tool: "Tool"):
         self._tool = tool
 
