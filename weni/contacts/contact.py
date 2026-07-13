@@ -65,8 +65,10 @@ class Contact:
 		Returns:
 			The updated Flows contact object as a dictionary.
 		"""
-		result = self._get_sender().update(payload=payload, urn=urn, **kwargs)
-		merged: dict[str, Any] = dict(payload or {})
-		merged.update(kwargs)
+
+		from weni.contacts.sender import ContactSender
+		merged = ContactSender._merge_update_payload(payload, kwargs)
 		self._tool._register_operation("contacts_updated", merged)
+		result = self._get_sender().update(payload=payload, urn=urn, **kwargs)
 		return result
+
