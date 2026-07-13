@@ -42,9 +42,11 @@ class Contact:
 		Returns:
 			The Flows contact object as a dictionary.
 		"""
-		contact = self._get_sender().get(urn=urn)
+
 		self._tool._register_operation("contacts_get", urn)
+		contact = self._get_sender().get(urn=urn)
 		return contact
+
 
 	def update(
 		self,
