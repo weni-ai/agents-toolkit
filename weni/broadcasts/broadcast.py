@@ -43,7 +43,13 @@ class Broadcast:
                 result = do_work()
                 return FinalResponse()
         ```
+
+    Shorthand via Tool:
+        ``self.send_broadcast(message)`` is equivalent to ``self.broadcasts.send(message)``.
     """
+
+    # Exposes self.send_broadcast on any Tool instance without adding a method to Tool.
+    _tool_methods: dict[str, str] = {"send_broadcast": "send"}
     def __init__(self, tool: "Tool"):
         self._tool = tool
 
@@ -55,16 +61,14 @@ class Broadcast:
         """
         Send a broadcast message to the contact via the Flows API.
 
-        If configure() hasn't been called, the message is only registered
-        in BroadcastEvent for tracking (backward compatibility).
-
         Args:
             message: The Message object to send (Text, Attachment, etc.)
         """
-        self._tool.register_broadcast(message.format_message())
+        payload = message.format_message()
+        self._tool._register_operation("messages_sent", payload)
 
         sender = self._get_sender()
-        sender.send(message.format_message())
+        sender.send(payload)
 
     def send_many(self, messages: list[Message]) -> None:
         """
@@ -76,8 +80,9 @@ class Broadcast:
         if not messages:
             return
 
-        for message in messages:
-            self._tool.register_broadcast(message.format_message())
+        payloads = [msg.format_message() for msg in messages]
+        for payload in payloads:
+            self._tool._register_operation("messages_sent", payload)
 
         sender = self._get_sender()
-        sender.send_batch([msg.format_message() for msg in messages])
+        sender.send_batch(payloads)
