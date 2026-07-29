@@ -64,3 +64,23 @@ class ProfileTool(Tool):
         settings: dict[str, Any] = context.globals.get("settings", {})
         api_key: Optional[str] = context.credentials.get("api_key")
 ```
+
+## Immutability
+
+Every namespace is exposed as a read-only mapping, so tool code cannot assign to it:
+
+```python
+context.parameters["city"] = "Recife"  # TypeError
+```
+
+The one exception is the `contact` namespace, which Flows integrations refresh in place after a successful write. Following [`self.contact.update(...)`](contacts.md#context-refresh), the updated attributes are readable from the same `context` object:
+
+```python
+class UpdateEmailTool(Tool):
+    def execute(self, context: Context) -> TextResponse:
+        self.contact.update(fields={"email": "user@example.com"})
+        email = context.contact["fields"]["email"]  # "user@example.com"
+        return TextResponse(data={"email": email})
+```
+
+The refresh lasts for the current invocation only. Whether the change is visible on the next conversation turn depends on the platform persisting it.

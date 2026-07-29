@@ -34,6 +34,10 @@ class Contact:
 		"update_contact": "_update_contact_compat",
 	}
 
+	# Contact attributes copied back into the context after a write. Platform
+	# metadata returned by Flows (uuid, created_on, modified_on, ...) stays out.
+	CONTEXT_REFRESH_KEYS: tuple[str, ...] = ("fields", "name", "language", "groups", "urns")
+
 	def __init__(self, tool: 'Tool'):
 		self._tool = tool
 
@@ -53,10 +57,9 @@ class Contact:
 			The Flows contact object as a dictionary.
 		"""
 
-		self._tool._register_operation("contacts_get", urn)
 		contact = self._get_sender().get(urn=urn)
+		self._tool._register_operation("contacts_get", urn)
 		return contact
-
 
 	def update(
 		self,
@@ -77,10 +80,25 @@ class Contact:
 		"""
 
 		from weni.contacts.sender import ContactSender
+
 		merged = ContactSender._merge_update_payload(payload, kwargs)
-		self._tool._register_operation("contacts_updated", merged)
 		result = self._get_sender().update(payload=payload, urn=urn, **kwargs)
+		self._tool._register_operation("contacts_updated", merged)
+		self._refresh_context(result)
 		return result
+
+	def _refresh_context(self, contact: dict[str, Any]) -> None:
+		"""
+		Merge the contact returned by Flows back into the tool context.
+
+		Reads from the response rather than the sent payload because Flows
+		normalizes values. Only whitelisted attributes are merged, so the
+		context does not accumulate platform metadata.
+		"""
+
+		patch = {key: contact[key] for key in self.CONTEXT_REFRESH_KEYS if key in contact}
+		if patch:
+			self._tool.context._merge_contact(patch)
 
 	def _update_contact_compat(
 		self,
