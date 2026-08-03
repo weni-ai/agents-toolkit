@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.8.1] - 2026-07-03
+
+- feat: change default flows url to be production url
+
 ## [2.8.0] - 2026-06-11
 
 - feat: add `weni.contacts` integration for reading and updating Flows contacts by conversation URN via `FlowsClient` (`Contact` facade and `ContactSender`); update-only semantics with hybrid dict/kwargs payloads, validation for empty body and `urns` in body, and WhatsApp Brazil 9th-digit URN retry on lookup
