@@ -80,7 +80,7 @@ class TestBroadcastSenderInit:
         context = create_context(project={"auth_token": "tk"})
         sender = BroadcastSender(context)
 
-        assert sender.flows_url == "https://flows.stg.cloud.weni.ai"
+        assert sender.flows_url == BroadcastSender.DEFAULT_FLOWS_URL
 
     def test_init_auth_token_optional(self):
         context = create_context(project={"flows_url": "https://flows.weni.ai"})
