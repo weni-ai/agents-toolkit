@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.8.2] - 2026-08-06
+
+- feat: refresh `context.contact` in place after a successful `Contact.update`, merging the `fields`, `name`, `language`, `groups`, and `urns` returned by Flows so the rest of the execution reads the current contact state
+- fix: record the `contacts_get` and `contacts_updated` operations only after the Flows call succeeds, so a rejected write is no longer reported as if it had happened
+
+## [2.8.1] - 2026-08-03
+
+- feat: change default flows url to be production url
+
 ## [2.8.0] - 2026-06-11
 
 - feat: add `weni.contacts` integration for reading and updating Flows contacts by conversation URN via `FlowsClient` (`Contact` facade and `ContactSender`); update-only semantics with hybrid dict/kwargs payloads, validation for empty body and `urns` in body, and WhatsApp Brazil 9th-digit URN retry on lookup
