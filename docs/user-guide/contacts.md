@@ -120,6 +120,24 @@ Each `get()` and `update()` call is recorded in the tool's operation log and inc
 
 These keys only appear in the result when at least one operation was performed.
 
+Entries are recorded **after** the Flows call succeeds. An update rejected by Flows (or a `get()` that finds no contact) raises and leaves the log untouched, so the platform never sees an operation that did not happen.
+
+## Context Refresh
+
+After a successful `update()`, the contact returned by Flows is merged back into `context.contact`, so the rest of the execution reads the current state:
+
+```python
+def execute(self, context: Context):
+    self.contact.update(fields={"email": "user@example.com"})
+    context.contact["fields"]["email"]  # "user@example.com"
+```
+
+Only contact attributes are merged — `fields`, `name`, `language`, `groups`, and `urns`. Platform metadata from the response (`uuid`, `created_on`, `modified_on`, `blocked`, `stopped`) is ignored so the namespace does not drift from what the platform provides.
+
+`fields` is merged key by key, keeping values you did not update. Every other attribute is replaced with the value Flows returned. The refresh reads the response, not the payload you sent, because Flows normalizes values on write.
+
+The refresh applies to the current invocation only. Persisting the change across conversation turns depends on the platform applying the `contacts_updated` log to the session memory.
+
 ## Configuration
 
 Configuration is resolved by `FlowsClient` when `ContactSender` is constructed:
