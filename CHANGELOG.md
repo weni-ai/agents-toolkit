@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.9.0] - 2026-09-08
+
+- feat: add `weni.vtex` integration for forwarding VTEX private API calls through Retail's generic proxy via `self.vtex.request` / `self.gallery_vtex`
+
 ## [2.8.2] - 2026-08-06
 
 - feat: refresh `context.contact` in place after a successful `Contact.update`, merging the `fields`, `name`, `language`, `groups`, and `urns` returned by Flows so the rest of the execution reads the current contact state

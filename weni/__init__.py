@@ -11,19 +11,21 @@ import weni.responses as Responses
 import weni.broadcasts as Broadcasts
 import weni.tracing as Tracing
 
-# Register Flows integration facades so that tool developers can access them
-# as self.broadcasts, self.contact, etc. without any imports inside Tool itself.
+# Register integration facades so that tool developers can access them
+# as self.broadcasts, self.contact, self.vtex, etc. without any imports inside Tool itself.
 from weni.broadcasts.broadcast import Broadcast
 from weni.contacts.contact import Contact
+from weni.vtex.vtex import Vtex
 
-Tool.register_integration("broadcasts", Broadcast)
-Tool.register_integration("contact", Contact)
+Tool.register_integration('broadcasts', Broadcast)
+Tool.register_integration('contact', Contact)
+Tool.register_integration('vtex', Vtex)
 
 __all__ = [
-    "Tool",
-    "Context",
-    "Components",
-    "Responses",
-    "Broadcasts",
-    "Tracing",
+	'Tool',
+	'Context',
+	'Components',
+	'Responses',
+	'Broadcasts',
+	'Tracing',
 ]
