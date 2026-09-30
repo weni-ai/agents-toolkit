@@ -26,11 +26,16 @@ class Vtex:
 
 	Shorthand via Tool:
 		``self.gallery_vtex(endpoint=...)`` is equivalent to ``self.vtex.request(endpoint=...)``.
+		``self.get_order(order_id)``, ``self.get_order_document(order_id)``, and
+		``self.search_orders(raw_query)`` are equivalent to the namespaced methods.
 	"""
 
-	# Exposes self.gallery_vtex on any Tool without adding methods to Tool.
+	# Exposes order helpers and self.gallery_vtex on any Tool without adding methods to Tool.
 	_tool_methods: dict[str, str] = {
 		'gallery_vtex': 'request',
+		'get_order': 'get_order',
+		'get_order_document': 'get_order_document',
+		'search_orders': 'search_orders',
 	}
 
 	def __init__(self, tool: 'Tool'):
@@ -90,5 +95,78 @@ class Vtex:
 		self._tool._register_operation(
 			'vtex_requests',
 			{'path': VtexSender.normalize_path(target), 'method': method.upper()},
+		)
+		return result
+
+	def get_order(self, order_id: str, merchant_name: str | None = None) -> dict[str, Any] | list[Any]:
+		"""
+		Fetch one OMS order by id.
+
+		Args:
+			order_id: VTEX order identifier.
+			merchant_name: Optional seller account override resolved by Retail.
+
+		Returns:
+			The parsed JSON object or array returned by the proxy.
+
+		Raises:
+			VtexValidationError: If the order id is invalid.
+			VtexConfigError: If Retail URL or auth token is missing.
+			VtexHTTPError: If Retail responds with a non-success status.
+			VtexNetworkError: If the request fails before a response is received.
+			VtexResponseError: If a success response is empty or not a JSON object/array.
+		"""
+		from weni.vtex.sender import VtexSender
+
+		path = VtexSender.order_path(VtexSender.OMS_ORDER_PATH, order_id)
+		return self.request(path=path, method='GET', merchant_name=merchant_name)
+
+	def get_order_document(self, order_id: str, merchant_name: str | None = None) -> dict[str, Any] | list[Any]:
+		"""
+		Fetch one order document by id.
+
+		Args:
+			order_id: VTEX order identifier.
+			merchant_name: Optional seller account override resolved by Retail.
+
+		Returns:
+			The parsed JSON object or array returned by the proxy.
+
+		Raises:
+			VtexValidationError: If the order id is invalid.
+			VtexConfigError: If Retail URL or auth token is missing.
+			VtexHTTPError: If Retail responds with a non-success status.
+			VtexNetworkError: If the request fails before a response is received.
+			VtexResponseError: If a success response is empty or not a JSON object/array.
+		"""
+		from weni.vtex.sender import VtexSender
+
+		path = VtexSender.order_path(VtexSender.ORDER_DOCUMENT_PATH, order_id)
+		return self.request(path=path, method='GET', merchant_name=merchant_name)
+
+	def search_orders(self, raw_query: str) -> dict[str, Any] | list[Any]:
+		"""
+		Search orders through Retail's dedicated orders endpoint.
+
+		Args:
+			raw_query: Query string forwarded as Retail ``raw_query``. A leading
+				``?`` is added when missing. The value is not re-encoded.
+
+		Returns:
+			The parsed JSON object or array returned by Retail.
+
+		Raises:
+			VtexValidationError: If the query is empty.
+			VtexConfigError: If Retail URL or auth token is missing.
+			VtexHTTPError: If Retail responds with a non-success status.
+			VtexNetworkError: If the request fails before a response is received.
+			VtexResponseError: If a success response is empty or not a JSON object/array.
+		"""
+		from weni.vtex.sender import VtexSender
+
+		result = self._get_sender().search_orders(raw_query)
+		self._tool._register_operation(
+			'vtex_requests',
+			{'path': VtexSender.ORDERS_SEARCH_PATH, 'method': 'POST'},
 		)
 		return result
