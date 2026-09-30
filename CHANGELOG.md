@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.0] - 2026-09-30
+
+- feat: add VTEX order helpers `self.get_order`, `self.get_order_document`, and `self.search_orders` so tools pass an order id or a search query instead of a proxy path
+
 ## [2.9.0] - 2026-09-08
 
 - feat: add `weni.vtex` integration for forwarding VTEX private API calls through Retail's generic proxy via `self.vtex.request` / `self.gallery_vtex`

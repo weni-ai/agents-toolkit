@@ -161,3 +161,114 @@ class TestToolShorthand:
 			{'path': '/api/oms/pvt/orders', 'method': 'GET'},
 		]
 		assert mock_client.post.call_count == 2
+
+
+class TestOrderFacade:
+	@patch.object(Vtex, '_get_sender')
+	def test_get_order_delegates_through_request(self, mock_get_sender):
+		mock_get_sender.return_value.request.return_value = {'orderId': 'v1-01'}
+		mock_tool = tool_with_context()
+
+		result = Vtex(mock_tool).get_order('v1-01', merchant_name='seller')
+
+		assert result == {'orderId': 'v1-01'}
+		mock_get_sender.return_value.request.assert_called_once_with(
+			path='/api/oms/pvt/orders/v1-01',
+			method='GET',
+			headers=None,
+			data=None,
+			params=None,
+			merchant_name='seller',
+		)
+		mock_tool._register_operation.assert_called_once_with(
+			'vtex_requests',
+			{'path': '/api/oms/pvt/orders/v1-01', 'method': 'GET'},
+		)
+
+	@patch.object(Vtex, '_get_sender')
+	def test_get_order_document_delegates_through_request(self, mock_get_sender):
+		mock_get_sender.return_value.request.return_value = {'orderId': 'v1-01'}
+		mock_tool = tool_with_context()
+
+		Vtex(mock_tool).get_order_document(' v1-01 ')
+
+		mock_get_sender.return_value.request.assert_called_once_with(
+			path='/api/orders/pvt/document/v1-01',
+			method='GET',
+			headers=None,
+			data=None,
+			params=None,
+			merchant_name=None,
+		)
+
+	def test_invalid_order_id_does_not_log(self):
+		mock_tool = tool_with_context()
+
+		with pytest.raises(VtexValidationError, match='path separators'):
+			Vtex(mock_tool).get_order('a/b')
+
+		mock_tool._register_operation.assert_not_called()
+
+	@patch.object(Vtex, '_get_sender')
+	def test_search_orders_logs_path_without_query(self, mock_get_sender):
+		mock_get_sender.return_value.search_orders.return_value = {'list': []}
+		mock_tool = tool_with_context()
+
+		result = Vtex(mock_tool).search_orders('?q=user@email.com')
+
+		assert result == {'list': []}
+		mock_get_sender.return_value.search_orders.assert_called_once_with('?q=user@email.com')
+		logged = mock_tool._register_operation.call_args[0][1]
+		assert logged == {'path': '/vtex/orders/', 'method': 'POST'}
+		assert 'user@email.com' not in str(logged)
+
+	@patch.object(Vtex, '_get_sender')
+	def test_search_orders_does_not_log_when_sender_fails(self, mock_get_sender):
+		mock_get_sender.return_value.search_orders.side_effect = VtexValidationError('empty')
+		mock_tool = tool_with_context()
+
+		with pytest.raises(VtexValidationError, match='empty'):
+			Vtex(mock_tool).search_orders('')
+
+		mock_tool._register_operation.assert_not_called()
+
+
+class TestOrderToolShorthand:
+	def test_order_helpers_are_bound(self, mocker):
+		mock_client = MagicMock()
+		mock_client.post.side_effect = [
+			{'orderId': 'v1-01'},
+			{'document': True},
+			{'list': []},
+		]
+		mocker.patch('weni.vtex.sender.RetailClient', return_value=mock_client)
+
+		class ProbeTool(Tool):
+			def execute(self, context: Context):
+				order = self.get_order('v1-01')
+				document = self.get_order_document('v1-01')
+				found = self.search_orders('q=user@email.com')
+				assert order == {'orderId': 'v1-01'}
+				assert document == {'document': True}
+				assert found == {'list': []}
+				return TextResponse(data=order)
+
+		context = create_context(project=default_project())
+		result, _format, _events, _traces = ProbeTool(context)
+
+		assert result['vtex_requests'] == [
+			{'path': '/api/oms/pvt/orders/v1-01', 'method': 'GET'},
+			{'path': '/api/orders/pvt/document/v1-01', 'method': 'GET'},
+			{'path': '/vtex/orders/', 'method': 'POST'},
+		]
+		assert mock_client.post.call_args_list[0].args == ('/vtex/proxy/',)
+		assert mock_client.post.call_args_list[0].kwargs == {
+			'json': {'method': 'GET', 'path': '/api/oms/pvt/orders/v1-01'},
+		}
+		assert mock_client.post.call_args_list[1].kwargs == {
+			'json': {'method': 'GET', 'path': '/api/orders/pvt/document/v1-01'},
+		}
+		assert mock_client.post.call_args_list[2].args == ('/vtex/orders/',)
+		assert mock_client.post.call_args_list[2].kwargs == {
+			'json': {'raw_query': '?q=user@email.com'},
+		}
