@@ -174,3 +174,114 @@ class TestRequestResponse:
 			sender.request(path='/api/oms/pvt/orders')
 
 		assert exc_info.value.status_code == 502
+
+
+class TestOrderPath:
+	def test_quotes_and_interpolates_oms_template(self):
+		path = VtexSender.order_path(VtexSender.OMS_ORDER_PATH, ' v1+01 ')
+
+		assert path == '/api/oms/pvt/orders/v1%2B01'
+
+	def test_interpolates_document_template(self):
+		path = VtexSender.order_path(VtexSender.ORDER_DOCUMENT_PATH, 'v123-01')
+
+		assert path == '/api/orders/pvt/document/v123-01'
+
+	@pytest.mark.parametrize('order_id', ['', '   '])
+	def test_empty_order_id_raises(self, order_id):
+		with pytest.raises(VtexValidationError, match='must not be empty'):
+			VtexSender.order_path(VtexSender.OMS_ORDER_PATH, order_id)
+
+	@pytest.mark.parametrize('order_id', ['a/b', 'a\\b', 'a?b', 'a#b', 'a b', 'a\tb'])
+	def test_unsafe_order_id_raises(self, order_id):
+		with pytest.raises(VtexValidationError, match='path separators'):
+			VtexSender.order_path(VtexSender.OMS_ORDER_PATH, order_id)
+
+
+class TestOrderLookups:
+	def test_get_order_posts_oms_path(self):
+		sender, client = _sender()
+		client.post.return_value = {'orderId': 'v1-01'}
+
+		result = sender.get_order('v1-01')
+
+		assert result == {'orderId': 'v1-01'}
+		client.post.assert_called_once_with(
+			'/vtex/proxy/',
+			json={'method': 'GET', 'path': '/api/oms/pvt/orders/v1-01'},
+		)
+
+	def test_get_order_forwards_merchant_name(self):
+		sender, client = _sender()
+		client.post.return_value = {}
+
+		sender.get_order('v1-01', merchant_name='selleraccount')
+
+		assert client.post.call_args.kwargs['json']['merchant_name'] == 'selleraccount'
+
+	def test_get_order_document_posts_document_path(self):
+		sender, client = _sender()
+		client.post.return_value = {'orderId': 'v1-01'}
+
+		sender.get_order_document('v1-01')
+
+		client.post.assert_called_once_with(
+			'/vtex/proxy/',
+			json={'method': 'GET', 'path': '/api/orders/pvt/document/v1-01'},
+		)
+
+	def test_invalid_order_id_never_posts(self):
+		sender, client = _sender()
+
+		with pytest.raises(VtexValidationError, match='path separators'):
+			sender.get_order('a/b')
+
+		client.post.assert_not_called()
+
+
+class TestSearchOrders:
+	def test_posts_dedicated_orders_endpoint(self):
+		sender, client = _sender()
+		client.post.return_value = {'list': []}
+
+		result = sender.search_orders('?q=user@email.com')
+
+		assert result == {'list': []}
+		client.post.assert_called_once_with(
+			'/vtex/orders/',
+			json={'raw_query': '?q=user@email.com'},
+		)
+		assert client.post.call_args.args[0] != '/vtex/proxy/'
+
+	def test_prefixes_missing_question_mark(self):
+		sender, client = _sender()
+		client.post.return_value = []
+
+		result = sender.search_orders('q=user@email.com')
+
+		assert result == []
+		assert client.post.call_args.kwargs['json'] == {'raw_query': '?q=user@email.com'}
+
+	def test_does_not_reencode_query(self):
+		sender, client = _sender()
+		client.post.return_value = {}
+
+		sender.search_orders('?q=user+tag@email.com')
+
+		assert client.post.call_args.kwargs['json']['raw_query'] == '?q=user+tag@email.com'
+
+	@pytest.mark.parametrize('raw_query', ['', '   '])
+	def test_empty_query_never_posts(self, raw_query):
+		sender, client = _sender()
+
+		with pytest.raises(VtexValidationError, match='raw_query must not be empty'):
+			sender.search_orders(raw_query)
+
+		client.post.assert_not_called()
+
+	def test_rejects_non_object_json(self):
+		sender, client = _sender()
+		client.post.return_value = 'plain-string'
+
+		with pytest.raises(VtexResponseError, match='not a JSON object or array'):
+			sender.search_orders('?q=user@email.com')
