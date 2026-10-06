@@ -32,6 +32,11 @@ orders = self.vtex.request(path="/api/oms/pvt/orders", method="GET")
 # Shorthand
 orders = self.gallery_vtex(endpoint="api/oms/pvt/orders", method="GET")
 
+# Order helpers — id or query only
+order = self.get_order("v1234567890-01")
+document = self.get_order_document("v1234567890-01")
+matches = self.search_orders("?q=user@email.com")
+
 # Explicit — pass the tool instance yourself
 from weni.vtex import Vtex
 orders = Vtex(self).request(path="/api/oms/pvt/orders", method="GET")
@@ -90,6 +95,28 @@ self.vtex.request(
 
 The return value is the parsed JSON from VTEX — an object or an array (OMS list endpoints commonly return arrays).
 
+## Order helpers
+
+Frequent order calls do not need a path. These methods build it (or the dedicated Retail body) for you:
+
+| Method | What it calls | You pass |
+|---|---|---|
+| `self.get_order(order_id)` | `GET /api/oms/pvt/orders/{order_id}` via `POST /vtex/proxy/` | the order id |
+| `self.get_order_document(order_id)` | `GET /api/orders/pvt/document/{order_id}` via `POST /vtex/proxy/` | the order id |
+| `self.search_orders(raw_query)` | `POST /vtex/orders/` with `{"raw_query": "..."}` | the query string |
+
+```python
+order = self.vtex.get_order("v1234567890-01")
+document = self.vtex.get_order_document("v1234567890-01", merchant_name="selleraccount")
+matches = self.vtex.search_orders("q=user@email.com")
+```
+
+`get_order` and `get_order_document` accept an optional `merchant_name`, forwarded the same way as `request()`. They do not take `headers`, `data`, or `params` — use `request()` when a call needs those.
+
+`order_id` is stripped, then rejected when it is empty or contains `/`, `\`, `?`, `#`, or whitespace. A valid id is quoted before it is placed in the path.
+
+`search_orders` does not go through `/vtex/proxy/`. It posts to Retail's orders endpoint, which forwards `raw_query` to VTEX IO `/get-orders`. An empty query raises `VtexValidationError`. A query without a leading `?` is prefixed (`q=user@email.com` becomes `?q=user@email.com`). The string is not re-encoded.
+
 ## Operation Log
 
 Each successful call is recorded in the tool's operation log:
@@ -103,7 +130,7 @@ Each successful call is recorded in the tool's operation log:
 }
 ```
 
-The key only appears when at least one request succeeded. Entries include **path and method only** — headers and body are omitted so VTEX app keys and tokens never land in the result payload.
+The key only appears when at least one request succeeded. Entries include **path and method only** — headers, body, and `search_orders` query strings are omitted so VTEX app keys, tokens, and emails never land in the result payload. A search is logged as `{"path": "/vtex/orders/", "method": "POST"}`.
 
 Entries are recorded **after** Retail succeeds. A validation error or a failed proxy call raises and leaves the log untouched.
 
@@ -145,7 +172,7 @@ except VtexError:
 | Error | Raised when |
 |---|---|
 | `VtexConfigError` | Missing `auth_token` |
-| `VtexValidationError` | Missing path, empty path, absolute URL, or method other than GET/POST/PUT/PATCH |
+| `VtexValidationError` | Missing path, empty path, absolute URL, method other than GET/POST/PUT/PATCH, invalid `order_id`, or empty `raw_query` |
 | `VtexHTTPError` | Retail responds with a non-success status — exposes `status_code` and `response_body` |
 | `VtexNetworkError` | The request fails before a response is received |
 | `VtexResponseError` | Success body is empty, not JSON, or not an object/array |
@@ -161,9 +188,12 @@ from weni.vtex import VtexSender
 
 sender = VtexSender(context)
 orders = sender.request(path="/api/oms/pvt/orders", method="GET")
+order = sender.get_order("v1234567890-01")
+document = sender.get_order_document("v1234567890-01")
+matches = sender.search_orders("?q=user@email.com")
 ```
 
-`VtexSender.request` does not accept the `endpoint` alias — that lives on the facade only.
+`VtexSender.request` does not accept the `endpoint` alias — that lives on the facade only. `search_orders` on the sender does not write the tool operation log; the facade does.
 
 ## Test Definition
 
