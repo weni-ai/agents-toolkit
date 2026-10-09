@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Add a VTEX proxy integration to the agents toolkit so gallery-agent tools can call VTEX private APIs the same way they already call Flows contacts (`self.contact.get()`). The v1 surface is `self.vtex.request(...)` plus the shorthand `self.gallery_vtex(...)`. Traffic goes through Retail's generic VTEX proxy (`POST /vtex/proxy/`); payment-gateway and payment-transaction proxies are out of scope. Reuse `context.project.auth_token`. Resolve `retail_url` from context/environment with no hardcoded default."
+**Input**: User description: "Add a VTEX proxy integration to the agents toolkit so gallery-agent tools can call VTEX private APIs the same way they already call Flows contacts (`self.contact.get()`). The v1 surface is `self.vtex.request(...)` plus the shorthand `self.requesting_vtex(...)`. Traffic goes through Retail's generic VTEX proxy (`POST /vtex/proxy/`); payment-gateway and payment-transaction proxies are out of scope. Reuse `context.project.auth_token`. Resolve `retail_url` from context/environment with no hardcoded default."
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -24,7 +24,7 @@ A toolkit developer building a gallery agent needs to read or write VTEX data du
 2. **Given** optional headers, JSON body, query parameters, and merchant name, **When** the developer includes them on the request, **Then** only the provided optional fields are forwarded in the proxy payload.
 3. **Given** a VTEX path without a leading slash (for example `api/oms/pvt/orders`), **When** the request is sent, **Then** the path is normalized to start with `/` before it leaves the toolkit.
 4. **Given** Retail returns a JSON object or a JSON array, **When** the request succeeds, **Then** the developer receives that value as-is (OMS list endpoints commonly return arrays).
-5. **Given** the developer uses either the namespaced `request` operation or the `gallery_vtex` shorthand, **When** they pass the same arguments (path via `path` or `endpoint`), **Then** both styles produce the same outbound proxy call.
+5. **Given** the developer uses either the namespaced `request` operation or the `requesting_vtex` shorthand, **When** they pass the same arguments (path via `path` or `endpoint`), **Then** both styles produce the same outbound proxy call.
 
 ---
 
@@ -50,16 +50,16 @@ A toolkit developer needs to distinguish configuration mistakes (missing token o
 
 ### User Story 3 - Use the integration from a Tool with the same ergonomics as contacts (Priority: P3)
 
-A toolkit developer authoring a `Tool` wants a small, discoverable VTEX API that mirrors contacts: a facade bound to the tool (`self.vtex`), a shorthand (`self.gallery_vtex`), a dedicated sender that owns proxy semantics, and a client that owns URL, auth, and error translation. They should not import or construct the client inside `execute`. Successful calls are recorded in the tool operation log without leaking secrets that may live in headers or bodies.
+A toolkit developer authoring a `Tool` wants a small, discoverable VTEX API that mirrors contacts: a facade bound to the tool (`self.vtex`), a shorthand (`self.requesting_vtex`), a dedicated sender that owns proxy semantics, and a client that owns URL, auth, and error translation. They should not import or construct the client inside `execute`. Successful calls are recorded in the tool operation log without leaking secrets that may live in headers or bodies.
 
 **Why this priority**: Consistency with contacts/broadcasts is how developers find the feature; it depends on P1 and P2 being available through the facade.
 
-**Independent Test**: Can be fully tested by constructing a tool with a valid execution context, calling `self.vtex.request` and `self.gallery_vtex`, verifying both delegate to the same sender, and verifying the operation log records path and method only after success.
+**Independent Test**: Can be fully tested by constructing a tool with a valid execution context, calling `self.vtex.request` and `self.requesting_vtex`, verifying both delegate to the same sender, and verifying the operation log records path and method only after success.
 
 **Acceptance Scenarios**:
 
 1. **Given** a tool instance with a configured execution context, **When** the developer accesses `self.vtex`, **Then** they can call `request` without manual client setup.
-2. **Given** the same tool instance, **When** the developer calls `self.gallery_vtex(...)`, **Then** it is equivalent to `self.vtex.request(...)`.
+2. **Given** the same tool instance, **When** the developer calls `self.requesting_vtex(...)`, **Then** it is equivalent to `self.vtex.request(...)`.
 3. **Given** a successful request, **When** the operation completes, **Then** the tool operation log contains a `vtex_requests` entry with path and method only (no headers or body).
 4. **Given** a request that fails validation or transport, **When** the operation raises, **Then** the operation log is not updated for that call.
 5. **Given** the VTEX package is imported from the toolkit public surface, **When** a developer reads the package exports, **Then** the facade, sender, client, and error types are available together.
@@ -94,7 +94,7 @@ A toolkit developer authoring a `Tool` wants a small, discoverable VTEX API that
 - **FR-009**: Optional `headers`, `data`, `params`, and `merchant_name` MUST be included in the proxy body only when provided (`headers`/`params`/`merchant_name` when truthy; `data` when not `None`).
 - **FR-010**: A successful proxy response MUST return the parsed JSON object or array. A success body that is empty or not JSON MUST raise a response error.
 - **FR-011**: Transport failures MUST be translated into VTEX-specific errors with a common base type: configuration, validation, HTTP (status code + body), network, and unreadable success body.
-- **FR-012**: The Tool facade MUST be registered as `vtex` so developers can call `self.vtex.request(...)`. The facade MUST also expose the shorthand `self.gallery_vtex` mapped to `request`. `Tool` itself MUST NOT gain hard-coded VTEX methods.
+- **FR-012**: The Tool facade MUST be registered as `vtex` so developers can call `self.vtex.request(...)`. The facade MUST also expose the shorthand `self.requesting_vtex` mapped to `request`. `Tool` itself MUST NOT gain hard-coded VTEX methods.
 - **FR-013**: After a successful request, the facade MUST append `{path, method}` to the tool operation log under `vtex_requests`. Headers and body MUST NOT be logged. Failures MUST NOT append an entry.
 - **FR-014**: Existing broadcasts and contacts behavior MUST remain unchanged.
 - **FR-015**: User-visible API changes MUST be documented in the project changelog and a user-guide page when the public surface is exported.
@@ -105,7 +105,7 @@ A toolkit developer authoring a `Tool` wants a small, discoverable VTEX API that
 - **VTEX Request**: A developer-facing call identified by a VTEX path and HTTP method, with optional headers, body, query parameters, and merchant name.
 - **Retail VTEX Proxy**: The existing Retail endpoint that resolves the project's VTEX account, signs inter-module credentials, and forwards the call to VTEX IO. The toolkit treats it as the only outbound hop.
 - **Execution Context**: The runtime object attached to a tool execution that supplies `project.auth_token` and optionally `retail_url`.
-- **VTEX Facade**: The developer-facing entry point bound to a tool (`self.vtex` / `self.gallery_vtex`).
+- **VTEX Facade**: The developer-facing entry point bound to a tool (`self.vtex` / `self.requesting_vtex`).
 - **VTEX Sender**: The component that validates method/path and builds the proxy payload.
 - **Retail Client**: The component that resolves Retail URL and token, issues the POST, and translates transport failures.
 
@@ -114,7 +114,7 @@ A toolkit developer authoring a `Tool` wants a small, discoverable VTEX API that
 ### Measurable Outcomes
 
 - **SC-001**: A toolkit developer can call a VTEX private API in a single operation without writing custom HTTP, URL, or authentication code.
-- **SC-002**: The namespaced call and the `gallery_vtex` shorthand are interchangeable for the same arguments.
+- **SC-002**: The namespaced call and the `requesting_vtex` shorthand are interchangeable for the same arguments.
 - **SC-003**: 100% of VTEX integration tests pass with no real network calls, and total toolkit test coverage remains at or above the project minimum (95%) after the feature merges.
 - **SC-004**: Configuration and validation failures never send an outbound request (verified in automated tests).
 - **SC-005**: Failure modes (missing token, invalid method, invalid path, HTTP error, network error, unreadable body) each produce a distinct, actionable error message verifiable in automated tests.
