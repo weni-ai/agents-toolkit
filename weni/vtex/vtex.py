@@ -25,14 +25,14 @@ class Vtex:
 		```
 
 	Shorthand via Tool:
-		``self.gallery_vtex(endpoint=...)`` is equivalent to ``self.vtex.request(endpoint=...)``.
+		``self.requesting_vtex(endpoint=...)`` is equivalent to ``self.vtex.request(endpoint=...)``.
 		``self.get_order(order_id)``, ``self.get_order_document(order_id)``, and
 		``self.search_orders(raw_query)`` are equivalent to the namespaced methods.
 	"""
 
-	# Exposes order helpers and self.gallery_vtex on any Tool without adding methods to Tool.
+	# Exposes order helpers and self.requesting_vtex on any Tool without adding methods to Tool.
 	_tool_methods: dict[str, str] = {
-		'gallery_vtex': 'request',
+		'requesting_vtex': 'request',
 		'get_order': 'get_order',
 		'get_order_document': 'get_order_document',
 		'search_orders': 'search_orders',

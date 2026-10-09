@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.10.0] - 2026-10-09
+
+- feat: rename the VTEX proxy shorthand from `self.gallery_vtex` to `self.requesting_vtex`
+
 ## [2.9.0] - 2026-10-06
 
 - feat: add `weni.vtex` integration for forwarding VTEX private API calls through Retail's generic proxy via `self.vtex.request` / `self.gallery_vtex`

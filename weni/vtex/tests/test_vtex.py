@@ -140,14 +140,14 @@ class TestVtexOperationLog:
 
 
 class TestToolShorthand:
-	def test_gallery_vtex_is_bound_to_request(self, mocker):
+	def test_requesting_vtex_is_bound_to_request(self, mocker):
 		mock_client = MagicMock()
 		mock_client.post.return_value = {'orders': []}
 		mocker.patch('weni.vtex.sender.RetailClient', return_value=mock_client)
 
 		class ProbeTool(Tool):
 			def execute(self, context: Context):
-				result = self.gallery_vtex(endpoint='api/oms/pvt/orders', method='GET')
+				result = self.requesting_vtex(endpoint='api/oms/pvt/orders', method='GET')
 				namespaced = self.vtex.request(path='/api/oms/pvt/orders', method='GET')
 				assert result == namespaced
 				return TextResponse(data=result)
