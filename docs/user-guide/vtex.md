@@ -11,7 +11,7 @@ from weni.responses import TextResponse
 
 class GetOrdersTool(Tool):
     def execute(self, context: Context):
-        orders = self.gallery_vtex(
+        orders = self.requesting_vtex(
             endpoint="api/oms/pvt/orders",
             method="GET",
             params={"f_status": "ready-for-handling"},
@@ -30,7 +30,7 @@ All three styles are equivalent. Choose whichever fits your convention:
 orders = self.vtex.request(path="/api/oms/pvt/orders", method="GET")
 
 # Shorthand
-orders = self.gallery_vtex(endpoint="api/oms/pvt/orders", method="GET")
+orders = self.requesting_vtex(endpoint="api/oms/pvt/orders", method="GET")
 
 # Order helpers — id or query only
 order = self.get_order("v1234567890-01")
@@ -64,7 +64,7 @@ orders = Vtex(self).request(path="/api/oms/pvt/orders", method="GET")
                                           /_v/proxy-vtex  ──►  VTEX API
 ```
 
-1. `request()` (and `gallery_vtex`) require a VTEX path and an HTTP method.
+1. `request()` (and `requesting_vtex`) require a VTEX path and an HTTP method.
 2. The sender rejects unsupported methods and absolute URLs before any network call.
 3. Retail authenticates the project, resolves the VTEX account (and optional merchant), and forwards the call to VTEX IO.
 4. The parsed JSON object or array is returned to the tool.
@@ -140,7 +140,7 @@ Configuration is resolved by `RetailClient` when `VtexSender` is constructed:
 
 | Value | Context keys (priority order) | Environment fallback | Required |
 |---|---|---|---|
-| Base URL | `retail_url` in `project` → `credentials` → `globals` | `RETAIL_BASE_URL` | No (defaults to staging `https://retailsetup.stg.cloud.weni.ai`) |
+| Base URL | `retail_url` in `project` → `credentials` → `globals` | `RETAIL_BASE_URL` | No (defaults to production `https://retailsetup.weni.ai`) |
 | Auth token | `auth_token` in `project` | — | Yes |
 
 Missing token raises `VtexConfigError` at construction. The auth token is the same project JWT already used by other toolkit integrations (`context.project.auth_token`).

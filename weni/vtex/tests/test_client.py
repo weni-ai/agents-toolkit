@@ -97,7 +97,7 @@ class TestBaseURLResolution:
 	def test_default_when_absent_everywhere(self):
 		context = create_context(project={'auth_token': 'tk'})
 
-		assert RetailClient(context).base_url == 'https://retailsetup.stg.cloud.weni.ai'
+		assert RetailClient(context).base_url == 'https://retailsetup.weni.ai'
 		assert RetailClient(context).base_url == RetailClient.DEFAULT_RETAIL_URL
 
 	def test_trailing_slash_stripped(self):

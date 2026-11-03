@@ -201,6 +201,27 @@ self.broadcasts.send(WhatsAppFlows(
 ))
 ```
 
+## Custom Data
+
+Every message type accepts an optional `custom_data` dict. It is forwarded unchanged as `msg.custom_data` on the WhatsApp Broadcasts API. There is no fixed schema: callers can put any JSON value in it (objects, arrays, strings, numbers, booleans, and null).
+
+```python
+from weni.broadcasts import Text
+
+self.broadcasts.send(Text(
+    text="Your order is confirmed!",
+    custom_data={
+        "order_id": "1234567890-01",
+        "coupon": {"code": "BLACKFRIDAY10", "expires_at": "2026-11-30T23:59:59Z"},
+        "tags": ["vip", "recovery"],
+    },
+))
+```
+
+`custom_data` is keyword-only, so existing positional calls such as `Text("Hello")` stay valid. It is omitted from the payload when it is missing or `{}`. Values that are not a dict, or that `json.dumps` cannot serialize, raise `TypeError` before the request is sent.
+
+The same argument works on every message type (`QuickReply`, `WhatsAppCarousel`, `PixPayment`, and the rest). Define `format_message` in the class body of any new message type so the injection hook can wrap it. Assigning `format_message` after the class has been created does not pick the hook up.
+
 ## Sending Multiple Messages
 
 ```python

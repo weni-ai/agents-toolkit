@@ -31,5 +31,5 @@
 
 ## Notes
 
-- The "user" is a toolkit developer, matching specs 001 and 002. Public names (`self.vtex.request`, `gallery_vtex`, `/vtex/proxy/`) are product surface, not incidental implementation.
+- The "user" is a toolkit developer, matching specs 001 and 002. Public names (`self.vtex.request`, `requesting_vtex`, `/vtex/proxy/`) are product surface, not incidental implementation.
 - All items passed on the first validation pass. No `[NEEDS CLARIFICATION]` markers. Ready for `/speckit-plan` or direct implementation per the approved plan.
