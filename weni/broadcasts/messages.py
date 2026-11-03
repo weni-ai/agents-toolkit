@@ -8,11 +8,37 @@ These are different from the Response components - these are for
 sending messages during tool execution, not for formatting responses.
 """
 
+import copy
+import json
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from functools import wraps
 from typing import Any, cast
 
 
+def _inject_custom_data(cls: type) -> None:
+    """Wrap a subclass's format_message so custom_data is added to the payload.
+
+    The wrapper is installed once per method. Inherited wrappers are left as they
+    are, and abstract methods are left for a concrete subclass to implement.
+    Replacing format_message after the class is created skips this hook.
+    """
+    current = getattr(cls, "format_message", None)
+    if current is None or getattr(current, "_custom_data_injected", False):
+        return
+    if getattr(current, "__isabstractmethod__", False):
+        return
+
+    @wraps(current)
+    def format_message(self: Message, *args: Any, **kwargs: Any) -> Any:
+        payload = current(self, *args, **kwargs)
+        return self._apply_custom_data(payload)
+
+    format_message._custom_data_injected = True  # type: ignore[attr-defined]
+    setattr(cls, "format_message", format_message)
+
+
+@dataclass
 class Message(ABC):
     """
     Base class for all broadcast message types.
@@ -20,7 +46,26 @@ class Message(ABC):
     Messages are used to build payloads for the WhatsApp Broadcasts API.
     Each message type implements `format_message()` to return the
     appropriate payload structure.
+
+    Args:
+        custom_data: Optional JSON object forwarded as ``msg.custom_data``.
+            Keyword-only. Omitted from the payload when missing or empty.
+            Every message type accepts it, including ones added later.
+
+    Example:
+        ```python
+        Text(
+            text="Seu pedido foi confirmado!",
+            custom_data={"order_id": "1234567890-01", "tags": ["vip"]},
+        )
+        ```
     """
+
+    custom_data: dict[str, Any] | None = field(default=None, kw_only=True)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        _inject_custom_data(cls)
 
     @abstractmethod
     def format_message(self) -> dict[str, Any]:
@@ -31,6 +76,25 @@ class Message(ABC):
             Dictionary with the message payload.
         """
         pass
+
+    def _apply_custom_data(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Add custom_data to a formatted payload.
+
+        When custom_data is missing or empty, the payload object is returned
+        unchanged. The stored value is a deep copy, so later edits to the
+        caller's dict do not change a payload that was already built.
+        """
+        custom_data = getattr(self, "custom_data", None)
+        if not custom_data:
+            return payload
+        if not isinstance(custom_data, dict):
+            raise TypeError(f"custom_data must be a dict, got {type(custom_data).__name__}")
+        try:
+            json.dumps(custom_data)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(f"custom_data must be JSON-serializable: {exc}") from exc
+        payload["custom_data"] = copy.deepcopy(custom_data)
+        return payload
 
     def _apply_header_footer(self, payload: dict[str, Any], header: str | None, footer: str | None) -> None:
         """
