@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- feat: custom_data support on all broadcast messages (backward compatible)
+
 ## [2.10.0] - 2026-10-09
 
 - feat: rename the VTEX proxy shorthand from `self.gallery_vtex` to `self.requesting_vtex`
