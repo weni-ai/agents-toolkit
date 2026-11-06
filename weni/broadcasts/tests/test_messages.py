@@ -2,7 +2,12 @@
 Tests for broadcast message types.
 """
 
+from datetime import datetime
+
+import pytest
+
 from weni.broadcasts.messages import (
+    Message,
     Text,
     QuickReply,
     WeniWebChatCatalog,
@@ -18,6 +23,7 @@ from weni.broadcasts.messages import (
     WhatsAppCarouselQuickReply,
     WhatsAppFlows,
 )
+from weni.broadcasts.tests.golden_payloads import GOLDEN_CASES
 
 class TestTextMessage:
     """Tests for Text message."""
@@ -465,3 +471,93 @@ class TestPixPayment:
         assert len(items) == 2
         assert items[0]["quantity"] == 1
         assert items[1]["quantity"] == 2
+
+
+class TestGoldenPayloads:
+    """Locks the payload each message type produces when custom_data is omitted."""
+
+    @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda case: case.name)
+    def test_minimal_payload_is_unchanged(self, case):
+        assert case.build_min().format_message() == case.expected_min
+
+    @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda case: case.name)
+    def test_full_payload_is_unchanged(self, case):
+        assert case.build_full().format_message() == case.expected_full
+
+
+CURL_CUSTOM_DATA = {
+    "order_id": "1234567890-01",
+    "coupon": {"code": "BLACKFRIDAY10", "expires_at": "2026-11-30T23:59:59Z"},
+    "tags": ["vip", "recovery"],
+}
+
+
+class TestCustomData:
+    """custom_data is optional and must not change the payload of any message type."""
+
+    @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda case: case.name)
+    def test_custom_data_is_added_without_changing_the_rest(self, case):
+        payload = case.build_min(custom_data=CURL_CUSTOM_DATA).format_message()
+
+        assert payload["custom_data"] == CURL_CUSTOM_DATA
+        without_custom_data = {key: value for key, value in payload.items() if key != "custom_data"}
+        assert without_custom_data == case.expected_min
+
+    @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda case: case.name)
+    def test_full_payload_keeps_every_field_when_custom_data_is_set(self, case):
+        payload = case.build_full(custom_data={"source": "tool"}).format_message()
+
+        assert payload["custom_data"] == {"source": "tool"}
+        without_custom_data = {key: value for key, value in payload.items() if key != "custom_data"}
+        assert without_custom_data == case.expected_full
+
+    @pytest.mark.parametrize("case", GOLDEN_CASES, ids=lambda case: case.name)
+    def test_omitted_custom_data_adds_no_key(self, case):
+        payload = case.build_min().format_message()
+
+        assert "custom_data" not in payload
+        assert payload == case.expected_min
+
+    def test_nested_curl_example(self):
+        payload = Text(text="Seu pedido foi confirmado!", custom_data=CURL_CUSTOM_DATA).format_message()
+
+        assert payload == {"text": "Seu pedido foi confirmado!", "custom_data": CURL_CUSTOM_DATA}
+
+    def test_positional_text_still_works(self):
+        assert Text("hi").format_message() == {"text": "hi"}
+        assert Text("hi", custom_data={"a": 1}).format_message() == {"text": "hi", "custom_data": {"a": 1}}
+
+    def test_empty_custom_data_is_omitted(self):
+        payload = Text(text="hi", custom_data={}).format_message()
+
+        assert payload == {"text": "hi"}
+        assert "custom_data" not in payload
+
+    def test_non_dict_raises_type_error(self):
+        with pytest.raises(TypeError, match="must be a dict"):
+            Text(text="hi", custom_data=["nope"]).format_message()  # type: ignore[arg-type]
+
+    def test_non_serializable_value_raises_type_error(self):
+        with pytest.raises(TypeError, match="JSON-serializable"):
+            Text(text="hi", custom_data={"when": datetime.now()}).format_message()
+
+    def test_later_mutation_does_not_change_the_payload(self):
+        custom_data = {"order_id": "1", "coupon": {"code": "A"}}
+        payload = Text(text="hi", custom_data=custom_data).format_message()
+
+        custom_data["order_id"] = "changed"
+        custom_data["coupon"]["code"] = "B"
+
+        assert payload["custom_data"] == {"order_id": "1", "coupon": {"code": "A"}}
+
+    def test_without_custom_data_returns_the_dict_format_message_built(self):
+        class Probe(Message):
+            def __init__(self) -> None:
+                self.custom_data = None
+
+            def format_message(self) -> dict:
+                self.built = {"text": "probe"}
+                return self.built
+
+        probe = Probe()
+        assert probe.format_message() is probe.built
